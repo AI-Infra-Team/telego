@@ -37,7 +37,7 @@ func (k BinManagerRclone) SpecInstallFunc() func() error {
 			// util.ModRunCmd.RunCommandShowProgress("brew", "install", "rclone")
 			os.MkdirAll("install_rclone", 0755)
 			os.Chdir("install_rclone")
-			defer os.RemoveAll("install_rclone")
+			// defer os.RemoveAll("install_rclone")
 			err := util.DownloadFile("https://github.com/rclone/rclone/releases/download/v1.68.2/rclone-v1.68.2-osx-arm64.zip", "rclone.zip")
 			if err != nil {
 				// fmt.Println("\nFailed to download rclone on mac os, maybe u need proxy, err:", err)
@@ -99,13 +99,16 @@ func (k BinManagerRclone) SpecInstallFunc() func() error {
 				// https://github.com/rclone/rclone/releases/download/v1.68.1/rclone-v1.68.1-linux-amd64.zip
 				err := util.DownloadFile(fmt.Sprintf("https://github.com/rclone/rclone/releases/download/v1.68.1/rclone-v1.68.1-linux-%s.zip", armOrAmd), "rclone.zip")
 				if err != nil {
-					return err
+					return fmt.Errorf("Download failed %w", err)
 				}
-				ModJobInstall.InstallLocalByJob(InstallJob{Bin: "rclone", BinPack: "bin_rclone"})
-				util.UnzipFile("rclone.zip", "./")
-				_, err = util.ModRunCmd.RequireRootRunCmd("mv", "rclone", "/usr/bin/")
+				err = util.UnzipFile("rclone.zip", "./")
 				if err != nil {
-					return err
+					return fmt.Errorf("Unzip failed %w", err)
+				}
+				_, err = util.ModRunCmd.NewBuilder("mv", "rclone-v1.68.1-linux-amd64/rclone", "/usr/bin/").
+					WithRoot().PrintCmd().ShowProgress().BlockRun()
+				if err != nil {
+					return fmt.Errorf("mv failed from %s to %s, %v", "rclone-v1.68.1-linux-amd64/rclone", "/usr/bin/", err)
 				}
 				return nil
 			}

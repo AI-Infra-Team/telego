@@ -1,12 +1,15 @@
 package util
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/thoas/go-funk"
 )
@@ -72,20 +75,26 @@ func (b *CmdBuilder) BlockRun() (string, error) {
 
 	return b.outputBuffer.String(), nil
 }
+
+func (b *CmdBuilder) PrintCmd() *CmdBuilder {
+	fmt.Printf("%s %v\n", b.cmd.Path, b.cmd.Args)
+	return b
+}
+
 func (b *CmdBuilder) WithRoot() *CmdBuilder {
 	if IsWindows() || isRoot() {
 		return b
 	}
-	if b.cmd.Path == "sudo" {
+	if b.cmd.Args[0] == "sudo" {
 		return b
 	}
-	nb := ModRunCmd.NewBuilder("sudo", append([]string{b.cmd.Path}, b.cmd.Args...)...)
+	nb := ModRunCmd.NewBuilder("sudo", b.cmd.Args...)
 
 	nb.SetDir(b.cmd.Dir)
 	nb.SetEnv(b.cmd.Env...)
 	nb.errWriters = b.errWriters
 
-	return b
+	return nb
 }
 
 func (m ModRunCmdStruct) ShowProgress(name string, args ...string) *CmdBuilder {
@@ -155,4 +164,51 @@ func (m CmdModels) InstallTelegoWithPy() string {
 
 func (m ModRunCmdStruct) CmdModels() CmdModels {
 	return CmdModels{}
+}
+
+func RunCmdWithTimeoutCheck(cmdStr string, timeout time.Duration, conditionMet func(output string) bool) (string, error) {
+	cmd := exec.Command("bash", "-c", cmdStr)
+	stdout, err := cmd.StdoutPipe()
+	if err != nil {
+		return "", fmt.Errorf("failed to get stdout: %w", err)
+	}
+
+	if err := cmd.Start(); err != nil {
+		return "", fmt.Errorf("failed to start command: %w", err)
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	var accumulatedOutput bytes.Buffer
+	done := make(chan struct{})
+
+	go func() {
+		scanner := bufio.NewScanner(stdout)
+		for scanner.Scan() {
+			line := scanner.Text()
+			accumulatedOutput.WriteString(line + "\n")
+			if conditionMet(accumulatedOutput.String()) {
+				cancel() // 满足条件，取消超时
+				break
+			}
+		}
+		close(done)
+	}()
+
+	select {
+	case <-ctx.Done():
+		if ctx.Err() == context.DeadlineExceeded {
+			_ = cmd.Process.Kill() // 超时强制结束子进程
+			return accumulatedOutput.String(), fmt.Errorf("timeout exceeded, process killed")
+		}
+	case <-done:
+		// 条件满足，继续等待子进程完成
+	}
+
+	if err := cmd.Wait(); err != nil {
+		return accumulatedOutput.String(), fmt.Errorf("process exited with error: %w", err)
+	}
+
+	return accumulatedOutput.String(), nil
 }

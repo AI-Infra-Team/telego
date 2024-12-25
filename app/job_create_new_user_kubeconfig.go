@@ -37,9 +37,9 @@ func (ModJobCreateNewUserStruct) JobCmdName() string {
 	return "create-new-user-kubeconfig"
 }
 
-func (ModJobCreateNewUserStruct) ParseJob(applyCmd *cobra.Command) *cobra.Command {
-	applyCmd.Run = func(_ *cobra.Command, _ []string) {
+func (ModJobCreateNewUserStruct) ParseJob(createUserCmd *cobra.Command) *cobra.Command {
+	createUserCmd.Run = func(_ *cobra.Command, _ []string) {
 		CreateNewUser()
 	}
-	return applyCmd
+	return createUserCmd
 }

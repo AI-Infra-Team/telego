@@ -1,64 +1,6 @@
 package app
 var MenuTreeData = `children:
-- children:
-  - children:
-    - children: []
-      comment: "\u6839\u636E\u6A21\u677F\u751F\u6210\u9879\u76EE"
-      name: generate
-    - children: []
-      comment: "\u76F4\u63A5\u5B89\u88C5\u8BE5\u9879\u76EE"
-      name: install
-    comment: "\u6A21\u677F\u9879\u76EE"
-    name: bin_argocd
-  - children:
-    - children: []
-      comment: "\u6839\u636E\u6A21\u677F\u751F\u6210\u9879\u76EE"
-      name: generate
-    - children: []
-      comment: "\u76F4\u63A5\u5B89\u88C5\u8BE5\u9879\u76EE"
-      name: install
-    comment: "\u6A21\u677F\u9879\u76EE"
-    name: bin_k3s
-  - children:
-    - children: []
-      comment: "\u6839\u636E\u6A21\u677F\u751F\u6210\u9879\u76EE"
-      name: generate
-    - children: []
-      comment: "\u76F4\u63A5\u5B89\u88C5\u8BE5\u9879\u76EE"
-      name: install
-    comment: "\u6A21\u677F\u9879\u76EE"
-    name: bin_kubectl
-  - children:
-    - children: []
-      comment: "\u6839\u636E\u6A21\u677F\u751F\u6210\u9879\u76EE"
-      name: generate
-    - children: []
-      comment: "\u76F4\u63A5\u5B89\u88C5\u8BE5\u9879\u76EE"
-      name: install
-    comment: "\u6A21\u677F\u9879\u76EE"
-    name: bin_ncdu
-  - children:
-    - children: []
-      comment: "\u6839\u636E\u6A21\u677F\u751F\u6210\u9879\u76EE"
-      name: generate
-    - children: []
-      comment: "\u76F4\u63A5\u5B89\u88C5\u8BE5\u9879\u76EE"
-      name: install
-    comment: "\u6A21\u677F\u9879\u76EE"
-    name: bin_rclone
-  - children:
-    - children: []
-      comment: "\u6839\u636E\u6A21\u677F\u751F\u6210\u9879\u76EE"
-      name: generate
-    comment: "\u6A21\u677F\u9879\u76EE"
-    name: k8s_kubepi_grafana
-  - children:
-    - children: []
-      comment: "\u6839\u636E\u6A21\u677F\u751F\u6210\u9879\u76EE"
-      name: generate
-    comment: "\u6A21\u677F\u9879\u76EE"
-    name: k8s_samba
-  comment: "\u76EE\u5F55 - \u5B89\u88C5\u3001\u90E8\u7F72\u6A21\u677F"
+- comment: "\u76EE\u5F55 - \u5B89\u88C5\u3001\u90E8\u7F72\u6A21\u677F"
   name: deploy-templete
 - children:
   - comment: "\u5206\u5E03\u5F0F\u7CFB\u7EDF - \u8F7B\u91CF\u5316k8s"
@@ -69,41 +11,13 @@ var MenuTreeData = `children:
 - children:
   - comment: "\u83B7\u53D6\u7BA1\u7406\u5458all in one kubeconfig"
     name: fetch_admin_kubeconfig
-  - children:
-    - comment: "\u6267\u884C"
-      name: run
-    - comment: "\u53D6\u6D88\u6267\u884C"
-      name: cancel
-    - comment: aW1wb3J0IG9zCkNVUl9GRElSID0gb3MucGF0aC5kaXJuYW1lKG9zLnBhdGguYWJzcGF0aChfX2ZpbGVfXykpCgppZiBvcy5uYW1lICE9ICdudCcgYW5kIG9zLmdldHVpZCgpICE9IDA6CiAgICAjIHByaW50KCJQbGVhc2UgcnVuIGFzIHJvb3QgdG8gYWRkIGhvc3RzIikKICAgIG9zLnN5c3RlbShmInN1ZG8gcHl0aG9uMyB7X19maWxlX199IikKICAgIGV4aXQoMCkKCnByaW50KCJzZXR0aW5nIHVwIGhvc3RzIikKZGVmIGFkZF9ob3N0cyhob3N0czogbGlzdCk6CiAgICAjIHZlcmlmeSBob3N0cyBmb3JtYXQKICAgIGZvciBob3N0IGluIGhvc3RzOgogICAgICAgIGlmIG5vdCBob3N0LmZpbmQoIiAiKSA+IDA6CiAgICAgICAgICAgIHByaW50KCJFcnJvcjogaG9zdHMgZm9ybWF0IGVycm9yIDEiKQogICAgICAgICAgICBleGl0KDEpCiAgICAgICAgaWYgbGVuKGhvc3Quc3BsaXQoIiAiKSkhPTI6CiAgICAgICAgICAgIHByaW50KCJFcnJvcjogaG9zdHMgZm9ybWF0IGVycm9yIDIiKQogICAgICAgICAgICBleGl0KDEpCgogICAgaWYgb3MubmFtZSA9PSAnbnQnOgogICAgICAgIGhvc3RmaWxlPXIiQzpcV2luZG93c1xTeXN0ZW0zMlxkcml2ZXJzXGV0Y1xob3N0cyIKICAgIGVsc2U6CiAgICAgICAgaG9zdGZpbGU9Ii9ldGMvaG9zdHMiCiAgICAjIHN1ZG8gb3BlbgogICAgd2l0aCBvcGVuKGhvc3RmaWxlKSBhcyBmOgogICAgICAgIGNvbnRlbnQ9Zi5yZWFkKCkKICAgIGxpbmVzPWNvbnRlbnQuc3BsaXQoIlxuIikKCiAgICB1cGRhdGVkX2hvc3RzPXt9CiAgICBmb3IgaSBpbiByYW5nZShsZW4obGluZXMpKToKICAgICAgICAjIGZpbmQgaG9zdHMKICAgICAgICBmb3IgaG9zdCBpbiBob3N0czoKICAgICAgICAgICAgaWYgaG9zdD09bGluZXNbaV06CiAgICAgICAgICAgICAgICBwcmludChmImhvc3Qgbm8gdXBkYXRlIG5lZWRlZDoge2hvc3R9IikKICAgICAgICAgICAgICAgIHVwZGF0ZWRfaG9zdHNbaG9zdF09aQogICAgICAgICAgICAgICAgYnJlYWsKICAgICAgICAgICAgaG9zdF9uYW1lPWhvc3Quc3BsaXQoIiAiKVsxXQogICAgICAgICAgICAjIGlmIHN0YXJ0IHdpdGggaG9zdF9pcCwgdXBkYXRhIHRoZSBsaW5lIHdpdGggbmV3IGNvbmZpZwogICAgICAgICAgICBpZiBsaW5lc1tpXS5yZXBsYWNlKCJcbiIsIiIpLmVuZHN3aXRoKGhvc3RfbmFtZSk6CiAgICAgICAgICAgICAgICBwcmludChmImhvc3QgdXBkYXRlOiB7bGluZXNbaV19IC0+IHtob3N0fSIpCiAgICAgICAgICAgICAgICBsaW5lc1tpXT1ob3N0CiAgICAgICAgICAgICAgICB1cGRhdGVkX2hvc3RzW2hvc3RdPWkKICAgICAgICAgICAgICAgIGJyZWFrCiAgICBmb3IgaG9zdCBpbiBob3N0czoKICAgICAgICBpZiBob3N0IG5vdCBpbiB1cGRhdGVkX2hvc3RzOgogICAgICAgICAgICBwcmludChmImhvc3QgYWRkOiB7aG9zdH0iKQogICAgICAgICAgICBsaW5lcy5hcHBlbmQoaG9zdCkKICAgICAgICAgICAgdXBkYXRlZF9ob3N0c1tob3N0XT1sZW4obGluZXMpLTEKICAgIHdpdGggb3Blbihob3N0ZmlsZSwgInciKSBhcyBmOgogICAgICAgIGYud3JpdGUoIlxuIi5qb2luKGxpbmVzKSkKCmFkZF9ob3N0cyhbCiAgICAiMTcyLjE2LjEzNS4xIGNlbnRvcy5jaGluYXRlbGVjb20uYWkiLAogICAgIjE3Mi4xNi4xMzUuMSBkb3dubG9hZC5jaGluYXRlbGVjb20uYWkiLAogICAgIjEwLjMwLjI1NC4yNTQgcHlwaS5jaGluYXRlbGVjb20uYWkiLAogICAgIjEwLjMwLjI1NC4yNTQgdWJ1bnR1LmNoaW5hdGVsZWNvbS5haSIsCiAgICAiMTAuMzcuODYuMzAgaGFyYm9yLnRlbGVjb21haS5jb20uY24iLAogICAgIjEwLjEyNy4yMy4xMDYgaGFyYm9yLnRlbGVjb20tYWkuY29tLmNuIgpdKQ==
-      name: embed_script
-    comment: "\u811A\u672C - \u4E00\u952E\u8BBE\u7F6E\u7535\u4FE1\u5185\u90E8host"
+  - comment: "\u811A\u672C - \u4E00\u952E\u8BBE\u7F6E\u7535\u4FE1\u5185\u90E8host"
     name: add_tele_host.py
-  - children:
-    - comment: "\u6267\u884C"
-      name: run
-    - comment: "\u53D6\u6D88\u6267\u884C"
-      name: cancel
-    - comment: IyBpbXBvcnQgb3MKCiMgb3Muc3lzdGVtKCIiInB5dGhvbjMgLWMgJ2ltcG9ydCB1cmxsaWIucmVxdWVzdCwgb3M7IHNjcmlwdCA9IHVybGxpYi5yZXF1ZXN0LnVybG9wZW4oImh0dHA6Ly8xMC4xMjcuMjAuMjE4OjgwMDMvYmluX2Vhc3lfY29uZmlnL2FkZF90ZWxlX2hvc3QucHkiKS5yZWFkKCk7IHByaW50KHNjcmlwdC5kZWNvZGUoKSknIHwgcHl0aG9uMyIiIikKCiMgcHJpbnQoInNldHRpbmcgdXAgcGlwIHNvdXJjZSIpCgojIHNvdXJjZT0iIiIKIyBbZ2xvYmFsXQojIGluZGV4LXVybCA9IGh0dHA6Ly9weXBpLmNoaW5hdGVsZWNvbS5haS9zaW1wbGUvCiMgW2luc3RhbGxdCiMgdHJ1c3RlZC1ob3N0PXB5cGkuY2hpbmF0ZWxlY29tLmFpCiMgIiIiCgojIHdpdGggb3BlbigiL2V0Yy9waXAuY29uZiIsInciKSBhcyBmOgojICAgICBmLndyaXRlKHNvdXJjZSkKCmltcG9ydCBvcwppbXBvcnQgdXJsbGliLnJlcXVlc3QKCiMgRG93bmxvYWQgdGhlIHNjcmlwdCBmcm9tIHRoZSBVUkwKcHJpbnQoIlNldHRpbmcgdXAgaG9zdCIpCm9zLnN5c3RlbSgidGVsZWdvIGNtZCAtLWNtZCB1cGRhdGVfY29uZmlnL2FkZF90ZWxlX2hvc3QucHkvcnVuIikKICAgIAoKIyBTZXR0aW5nIHVwIHBpcCBzb3VyY2UKcHJpbnQoIlNldHRpbmcgdXAgcGlwIHNvdXJjZSIpCgojIFdpbmRvd3MgdXNlcyBwaXAuaW5pLCB0eXBpY2FsbHkgbG9jYXRlZCBpbiB0aGUgdXNlcuKAmXMgQXBwRGF0YSBkaXJlY3RvcnkKcGlwX2NvbmZpZ19wYXRoPSIvZXRjL3BpcC5jb25mIgppZiBvcy5uYW1lID09ICdudCc6CiAgICBwaXBfY29uZmlnX3BhdGggPSBvcy5wYXRoLmpvaW4ob3MuZ2V0ZW52KCdBUFBEQVRBJyksICdwaXAnLCAncGlwLmluaScpCgojIFNvdXJjZSBjb25maWd1cmF0aW9uIGZvciBwaXAKc291cmNlID0gIiIiCltnbG9iYWxdCmluZGV4LXVybCA9IGh0dHA6Ly9weXBpLmNoaW5hdGVsZWNvbS5haS9zaW1wbGUvCltpbnN0YWxsXQp0cnVzdGVkLWhvc3Q9cHlwaS5jaGluYXRlbGVjb20uYWkKIiIiCgojIEVuc3VyZSB0aGUgcGlwIGRpcmVjdG9yeSBleGlzdHMKcGlwX2RpciA9IG9zLnBhdGguZGlybmFtZShwaXBfY29uZmlnX3BhdGgpCmlmIG5vdCBvcy5wYXRoLmV4aXN0cyhwaXBfZGlyKToKICAgIG9zLm1ha2VkaXJzKHBpcF9kaXIpCgojIFdyaXRlIHRoZSBjb25maWd1cmF0aW9uIHRvIHBpcC5pbmkKd2l0aCBvcGVuKHBpcF9jb25maWdfcGF0aCwgInciKSBhcyBmOgogICAgZi53cml0ZShzb3VyY2UpCg==
-      name: embed_script
-    comment: "\u811A\u672C - \u4E00\u952E\u8BBE\u7F6Epip\u6E90"
+  - comment: "\u811A\u672C - \u4E00\u952E\u8BBE\u7F6Epip\u6E90"
     name: set_pip_source.py
-  - children:
-    - comment: "\u6267\u884C"
-      name: run
-    - comment: "\u53D6\u6D88\u6267\u884C"
-      name: cancel
-    - comment: aW1wb3J0IG9zCmltcG9ydCB1cmxsaWIucmVxdWVzdAoKZGVmIGNtZF9jb2xvcihzdHJpbmcsY29sb3IpOgogICAgY29sb3JfZGljdD17InJlZCI6MzEsImdyZWVuIjozMiwieWVsbG93IjozMywiYmx1ZSI6MzQsIm1hZ2VudGEiOjM1LCJjeWFuIjozNiwid2hpdGUiOjM3fQogICAgcmV0dXJuIGYiXDAzM1t7Y29sb3JfZGljdFtjb2xvcl19bXtzdHJpbmd9XDAzM1swbSIKCmlmIG9zLm5hbWUgPT0gJ250JzoKICAgIHByaW50KGNtZF9jb2xvcigidGhpcyBzY3JpcHQgaXMgb25seSBmb3IgY2VudG9zL2N0eXVub3MiLCJyZWQiKSkKICAgIGV4aXQoMSkKCgpkZWYgb3Nfc3lzdGVtX3N1cmUoY29tbWFuZCk6CiAgICBCRUZPUkVfUlVOX1RJVExFPWNtZF9jb2xvcigi5omn6KGM5ZG95Luk77yaIiwiYmx1ZSIpCiAgICBSVU5fRkFJTF9USVRMRT1jbWRfY29sb3IoIj4iLCJibHVlIikrIlxuIitjbWRfY29sb3IoIuWRveS7pOaJp+ihjOWksei0pe+8miIsInJlZCIpCiAgICBSVU5fU1VDQ0VTU19USVRMRT1jbWRfY29sb3IoIj4iLCJibHVlIikrIlxuIitjbWRfY29sb3IoIuWRveS7pOaJp+ihjOaIkOWKn++8miIsImdyZWVuIikKICAgIHByaW50KGYie0JFRk9SRV9SVU5fVElUTEV9e2NvbW1hbmR9IikKICAgIGNvZGU9b3Muc3lzdGVtKGNvbW1hbmQpCiAgICAjIHJlc3VsdCwgY29kZSA9IHJ1bl9jb21tYW5kMihjb21tYW5kLGFsbG93X2ZhaWw9VHJ1ZSkKICAgICMgY29kZT1vcy5zeXN0ZW0oY29tbWFuZCkKICAgIGlmIGNvZGUgIT0gMDoKICAgICAgICBwcmludChmIntSVU5fRkFJTF9USVRMRX17Y29tbWFuZH0iKQogICAgICAgIGV4aXQoMSkKICAgIHByaW50KGYie1JVTl9TVUNDRVNTX1RJVExFfXtjb21tYW5kfVxuIikKZGVmIG9zX3N5c3RlbShjb21tYW5kKToKICAgIEJFRk9SRV9SVU5fVElUTEU9Y21kX2NvbG9yKCLmiafooYzlkb3ku6TvvJoiLCJibHVlIikKICAgIFJVTl9GQUlMX1RJVExFPWNtZF9jb2xvcigiXG7lkb3ku6TmiafooYzlpLHotKXvvJoiLCJyZWQiKQogICAgUlVOX1NVQ0NFU1NfVElUTEU9Y21kX2NvbG9yKCJcbuWRveS7pOaJp+ihjOaIkOWKn++8miIsImdyZWVuIikKICAgIHByaW50KGYie0JFRk9SRV9SVU5fVElUTEV9e2NvbW1hbmR9IikKICAgIGNvZGU9b3Muc3lzdGVtKGNvbW1hbmQpCiAgICAjIHJlc3VsdCA9cnVuX2NvbW1hbmQyKGNvbW1hbmQsYWxsb3dfZmFpbD1UcnVlKQogICAgaWYgY29kZSAhPSAwOgogICAgICAgIHByaW50KGYie1JVTl9GQUlMX1RJVExFfXtjb21tYW5kfSIpCiAgICBlbHNlOgogICAgICAgIHByaW50KGYie1JVTl9TVUNDRVNTX1RJVExFfXtjb21tYW5kfVxuIikKCm9zX3N5c3RlbSgiIiJweXRob24zIC1jICdpbXBvcnQgdXJsbGliLnJlcXVlc3QsIG9zOyBzY3JpcHQgPSB1cmxsaWIucmVxdWVzdC51cmxvcGVuKCJodHRwOi8vMTAuMTI3LjIwLjIxODo4MDAzL2Jpbl9lYXN5X2NvbmZpZy9hZGRfdGVsZV9ob3N0LnB5IikucmVhZCgpOyBwcmludChzY3JpcHQuZGVjb2RlKCkpJyB8IHB5dGhvbjMiIiIpCgpwcmludCgic2V0dGluZyB1cCBycG0gc291cmNlIikKCm9zX3N5c3RlbSgicm0gLXJmIC9ldGMveXVtLnJlcG9zLmQiKQpvc19zeXN0ZW0oIm1rZGlyIC9ldGMveXVtLnJlcG9zLmQiKQoKCiMgdXNlIHVybCBsaWIgdG8gZG93bmxvYWQsIHZlcnkgaW5kZXBlbmRlbnQKc2NyaXB0ID0gdXJsbGliLnJlcXVlc3QudXJsb3BlbigiaHR0cDovL2Rvd25sb2FkLmNoaW5hdGVsZWNvbS5haS9DZW50T1M4LUNoaW5hVGVsZWNvbS5yZXBvIikucmVhZCgpLmRlY29kZSgpCndpdGggb3BlbigiL2V0Yy95dW0ucmVwb3MuZC9DZW50T1M4LUNoaW5hVGVsZWNvbS5yZXBvIiwidyIpIGFzIGY6CiAgICBmLndyaXRlKHNjcmlwdCkKCm9zX3N5c3RlbSgieXVtIHVwZGF0ZSAteSIp
-      name: embed_script
-    comment: "\u811A\u672C - \u4E00\u952E\u8BBE\u7F6Eyum\u6E90"
+  - comment: "\u811A\u672C - \u4E00\u952E\u8BBE\u7F6Eyum\u6E90"
     name: set_rpm_source.py
-  - children:
-    - comment: "\u6267\u884C"
-      name: run
-    - comment: "\u53D6\u6D88\u6267\u884C"
-      name: cancel
-    - comment: aW1wb3J0IG9zCmltcG9ydCB1cmxsaWIucmVxdWVzdAoKZGVmIGNtZF9jb2xvcihzdHJpbmcsY29sb3IpOgogICAgY29sb3JfZGljdD17InJlZCI6MzEsImdyZWVuIjozMiwieWVsbG93IjozMywiYmx1ZSI6MzQsIm1hZ2VudGEiOjM1LCJjeWFuIjozNiwid2hpdGUiOjM3fQogICAgcmV0dXJuIGYiXDAzM1t7Y29sb3JfZGljdFtjb2xvcl19bXtzdHJpbmd9XDAzM1swbSIKCiMgaWYgd2luZG93cwppZiBvcy5uYW1lID09ICdudCc6CiAgICBwcmludChjbWRfY29sb3IoInRoaXMgc2NyaXB0IGlzIG9ubHkgZm9yIHVidW50dTE4LjA0ICIsInJlZCIpKQogICAgZXhpdCgxKQoKIyBnZXQgdWJ1bnR1IHZlcnNpb24KZGVmIGdldF91YnVudHVfdmVyc2lvbigpOgogICAgd2l0aCBvcGVuKCcvZXRjL29zLXJlbGVhc2UnKSBhcyBmOgogICAgICAgIG9zX2luZm8gPSBmLnJlYWQoKQogICAgCiAgICBmb3IgbGluZSBpbiBvc19pbmZvLnNwbGl0bGluZXMoKToKICAgICAgICBpZiBsaW5lLnN0YXJ0c3dpdGgoIlZFUlNJT049Iik6CiAgICAgICAgICAgIHJldHVybiBsaW5lLnNwbGl0KCI9IilbMV0uc3RyaXAoJyInKQogICAgCiAgICByZXR1cm4gIlVidW50dSB2ZXJzaW9uIG5vdCBmb3VuZCIKaWYgZ2V0X3VidW50dV92ZXJzaW9uKCkuZmluZCgiMTguMDQiKT09LTE6CiAgICBwcmludChjbWRfY29sb3IoInRoaXMgc2NyaXB0IGlzIG9ubHkgZm9yIHVidW50dTE4LjA0ICIsInJlZCIpKQogICAgZXhpdCgxKQoKb3Muc3lzdGVtKCIiInB5dGhvbjMgLWMgJ2ltcG9ydCB1cmxsaWIucmVxdWVzdCwgb3M7IHNjcmlwdCA9IHVybGxpYi5yZXF1ZXN0LnVybG9wZW4oImh0dHA6Ly8xMC4xMjcuMjAuMjE4OjgwMDMvYmluX2Vhc3lfY29uZmlnL2FkZF90ZWxlX2hvc3QucHkiKS5yZWFkKCk7IHByaW50KHNjcmlwdC5kZWNvZGUoKSknIHwgcHl0aG9uMyIiIikKCnByaW50KCJzZXR0aW5nIHVwIGFwdCBzb3VyY2UiKQoKCiMgdXNlIHVybCBsaWIgdG8gZG93bmxvYWQsIHZlcnkgaW5kZXBlbmRlbnQKYXB0X3NvdXJjZV9jb250ZW50ID0gdXJsbGliLnJlcXVlc3QudXJsb3BlbigiaHR0cDovL2Rvd25sb2FkLmNoaW5hdGVsZWNvbS5haS9CaW9uaWMtQ2hpbmFUZWxlY29tLmxpc3QiKS5yZWFkKCkuZGVjb2RlKCkKIyB3aXRoIG9wZW4oIi9ldGMveXVtLnJlcG9zLmQvQ2VudE9TOC1DaGluYVRlbGVjb20ucmVwbyIsInciKSBhcyBmOgojICAgICBmLndyaXRlKHNjcmlwdCkKCiMg5bCGQVBU5rqQ5YiX6KGo5YaZ5YWl5YiwL2V0Yy9hcHQvc291cmNlcy5saXN0LmQv55uu5b2V5LiL55qE5paH5Lu25LitCndpdGggb3BlbigiL2V0Yy9hcHQvc291cmNlcy5saXN0LmQvQ2hpbmFUZWxlY29tLmxpc3QiLCAidyIpIGFzIGY6CiAgICBmLndyaXRlKGFwdF9zb3VyY2VfY29udGVudCkKCiMg5pu05pawQVBU5YyF57Si5byVCm9zLnN5c3RlbSgiYXB0LWdldCB1cGRhdGUiKQ==
-      name: embed_script
-    comment: "\u811A\u672C - \u4E00\u952E\u8BBE\u7F6Eapt\u6E90"
+  - comment: "\u811A\u672C - \u4E00\u952E\u8BBE\u7F6Eapt\u6E90"
     name: set_apt_source.py
   - comment: "\u542F\u52A8\u4E3B\u8282\u70B9\u6587\u4EF6\u670D\u52A1\u5668"
     name: start_mainnode_fileserver
@@ -114,102 +28,6 @@ var MenuTreeData = `children:
       name: 2.update_key_to_cluster
     comment: "\u914D\u7F6E\u96C6\u7FA4ssh\u514D\u5BC6"
     name: ssh_config
-  - children:
-    - children:
-      - children:
-        - comment: "\u6267\u884C"
-          name: run
-        - comment: "\u53D6\u6D88\u6267\u884C"
-          name: cancel
-        - comment: ''
-          name: embed_script
-        comment: "\u672A\u9650\u5B9A\u811A\u672C"
-        name: 1.install_minio_client.py
-      - children:
-        - comment: "\u6267\u884C"
-          name: run
-        - comment: "\u53D6\u6D88\u6267\u884C"
-          name: cancel
-        - comment: CmltcG9ydCBvcywgc3lzLCB5YW1sLCBqc29uLCB0aW1lCkNVUl9GRElSID0gb3MucGF0aC5kaXJuYW1lKG9zLnBhdGguYWJzcGF0aChfX2ZpbGVfXykpCm9zLmNoZGlyKENVUl9GRElSKQpST09UX0RJUj1vcy5wYXRoLmFic3BhdGgob3MucGF0aC5qb2luKENVUl9GRElSLCAiLi4vLi4vLi4iKSkKc3lzLnBhdGguYXBwZW5kKFJPT1RfRElSKQppbXBvcnQgcHlsaWIKClVTRVJTPXB5bGliLmdldF9zZWNyZXRfZGF0YShrZXk9J2p1aWNlX3MzX3BvbGljeV9jb25mJykKVVNFUlM9eWFtbC5zYWZlX2xvYWQoVVNFUlMpCgpGU05BTUU9J3RlbGVqZnMnCgpmb3IgdXNlciBpbiBVU0VSUzoKICAgIHB3PVVTRVJTW3VzZXJdWydwYXNzd29yZCddCiAgICBweWxpYi5vc19zeXN0ZW0oZiJtYyBhZG1pbiB1c2VyIGFkZCB7RlNOQU1FfSB7dXNlcn0ge3B3fSIpCiAgICB0aW1lLnNsZWVwKDUpCiAgICAKICAgICMgZ2VuZXJhdGUgZGlycyBjb250ZW50CiAgICAjICBsaWtlOgogICAgIyAgWwogICAgIyAgICAgICJhcm46YXdzOnMzOjo6dGVsZWpmcy9wdWJsaWMvKiIsCiAgICAjICAgICAgImFybjphd3M6czM6Ojp0ZWxlamZzL3t1c2VyfS8qIgogICAgIyAgXQogICAgZGlycz1bXQogICAgaWYgJyonIGluIFVTRVJTW3VzZXJdWydkaXInXToKICAgICAgICBkaXJzLmFwcGVuZCgiYXJuOmF3czpzMzo6OnRlbGVqZnMvKiIpCiAgICBlbHNlOgogICAgICAgIGZvciBkaXIgaW4gVVNFUlNbdXNlcl1bJ2RpciddOgogICAgICAgICAgICBkaXJzLmFwcGVuZChmImFybjphd3M6czM6Ojp0ZWxlamZzL3tkaXJ9LyoiKQogICAgCiAgICAjIHJ3IGFjY2VzcyB0byB0ZWxlamZzL3B1YmxpYyAmIHRlbGVqZnMve3VzZXJ9CiAgICBwb2xpY3lfbmFtZSA9IHVzZXIuc3BsaXQoJ18nKVstMV0KICAgIHBvbGljeV9uYW1lICs9ICctcG9saWN5JwogICAgCiAgICBwb2xpY3k9ewogICAgICAgICAgICAiVmVyc2lvbiI6ICIyMDEyLTEwLTE3IiwKICAgICAgICAgICAgIlN0YXRlbWVudCI6IFsKICAgICAgICAgICAgICAgIHsKICAgICAgICAgICAgICAgICAgICAiRWZmZWN0IjogIkFsbG93IiwKICAgICAgICAgICAgICAgICAgICAiQWN0aW9uIjogWwogICAgICAgICAgICAgICAgICAgICAgICAiczM6R2V0QnVja2V0TG9jYXRpb24iLAogICAgICAgICAgICAgICAgICAgICAgICAiczM6TGlzdEJ1Y2tldCIsCiAgICAgICAgICAgICAgICAgICAgICAgICJzMzpMaXN0QnVja2V0TXVsdGlwYXJ0VXBsb2FkcyIsCiAgICAgICAgICAgICAgICAgICAgICAgICJzMzpMaXN0QnVja2V0VmVyc2lvbnMiLAogICAgICAgICAgICAgICAgICAgICAgICAiczM6TGlzdE11bHRpcGFydFVwbG9hZFBhcnRzIiwKICAgICAgICAgICAgICAgICAgICAgICAgInMzOkFib3J0TXVsdGlwYXJ0VXBsb2FkIiwKICAgICAgICAgICAgICAgICAgICAgICAgInMzOkRlbGV0ZU9iamVjdCIsCiAgICAgICAgICAgICAgICAgICAgICAgICJzMzpHZXRPYmplY3QiLAogICAgICAgICAgICAgICAgICAgICAgICAiczM6TGlzdE11bHRpcGFydFVwbG9hZFBhcnRzIiwKICAgICAgICAgICAgICAgICAgICAgICAgInMzOlB1dE9iamVjdCIsCiAgICAgICAgICAgICAgICAgICAgICAgICJzMzpDcmVhdGVCdWNrZXQiLAogICAgICAgICAgICAgICAgICAgICAgICAiczM6RGVsZXRlQnVja2V0IiwKICAgICAgICAgICAgICAgICAgICBdLAogICAgICAgICAgICAgICAgICAgICJSZXNvdXJjZSI6IGRpcnMKICAgICAgICAgICAgICAgIH0sCiAgICAgICAgICAgICAgICB7CiAgICAgICAgICAgICAgICAgICAgIkVmZmVjdCI6ICJBbGxvdyIsCiAgICAgICAgICAgICAgICAgICAgIkFjdGlvbiI6IFsKICAgICAgICAgICAgICAgICAgICAgICAgInMzOkdldEJ1Y2tldExvY2F0aW9uIiwKICAgICAgICAgICAgICAgICAgICAgICAgInMzOkxpc3RCdWNrZXQiLAogICAgICAgICAgICAgICAgICAgICAgICAiczM6TGlzdEJ1Y2tldE11bHRpcGFydFVwbG9hZHMiLAogICAgICAgICAgICAgICAgICAgICAgICAiczM6TGlzdEJ1Y2tldFZlcnNpb25zIiwKICAgICAgICAgICAgICAgICAgICAgICAgInMzOkxpc3RNdWx0aXBhcnRVcGxvYWRQYXJ0cyIKICAgICAgICAgICAgICAgICAgICBdLAogICAgICAgICAgICAgICAgICAgICJSZXNvdXJjZSI6IFsKICAgICAgICAgICAgICAgICAgICAgICAgImFybjphd3M6czM6Ojp0ZWxlamZzIgogICAgICAgICAgICAgICAgICAgIF0KICAgICAgICAgICAgICAgIH0KICAgICAgICAgICAgXQogICAgICAgIH0KICAgIAogICAgdG1wZGlyPW9zLnBhdGguam9pbihweWxpYi5jdXJyZW50X3VzZXJfZGlyKCksInRtcCIpCiAgICBweWxpYi5ta2Rpcih0bXBkaXIpCiAgICB3aXRoIG9wZW4oZid7dG1wZGlyfS97cG9saWN5X25hbWV9Lmpzb24nLCd3JykgYXMgZjoKICAgICAgICBmLndyaXRlKGpzb24uZHVtcHMocG9saWN5KSkKICAgICAgICAKICAgIHB5bGliLm9zX3N5c3RlbShmIm1jIGFkbWluIHBvbGljeSB1bnNldCB7RlNOQU1FfSB7cG9saWN5X25hbWV9IHVzZXI9e3VzZXJ9IikKICAgIHB5bGliLm9zX3N5c3RlbShmIm1jIGFkbWluIHBvbGljeSByZW1vdmUge0ZTTkFNRX0ge3BvbGljeV9uYW1lfSIpCiAgICBweWxpYi5vc19zeXN0ZW0oZiJtYyBhZG1pbiBwb2xpY3kgYWRkIHtGU05BTUV9IHtwb2xpY3lfbmFtZX0ge3RtcGRpcn0ve3BvbGljeV9uYW1lfS5qc29uIikKICAgIHRpbWUuc2xlZXAoNSkKICAgIHB5bGliLm9zX3N5c3RlbShmIm1jIGFkbWluIHBvbGljeSBzZXQge0ZTTkFNRX0ge3BvbGljeV9uYW1lfSB1c2VyPXt1c2VyfSIpCgpweWxpYi5vc19zeXN0ZW0oZiJtYyBhZG1pbiB1c2VyIGxpc3Qge0ZTTkFNRX0iKQ==
-          name: embed_script
-        comment: "\u672A\u9650\u5B9A\u811A\u672C"
-        name: 2.config_juice_s3_users.py
-      comment: "\u76EE\u5F55"
-      name: s3_policy
-    - children: []
-      comment: "\u76EE\u5F55"
-      name: userconfig
-    comment: "\u76EE\u5F55"
-    name: access_control
-  - children:
-    - children:
-      - comment: "\u6267\u884C"
-        name: run
-      - comment: "\u53D6\u6D88\u6267\u884C"
-        name: cancel
-      - comment: aW1wb3J0IG9zLHN5cwpDVVJfRkRJUiA9IG9zLnBhdGguZGlybmFtZShvcy5wYXRoLmFic3BhdGgoX19maWxlX18pKQpvcy5jaGRpcihDVVJfRkRJUikKCgpkZWYgYWRkX2V2ZW50X3R0bChjb25maWdfbGluZXMpOgogICAgZm9yIGksbGluZSBpbiBlbnVtZXJhdGUoY29uZmlnX2xpbmVzKToKICAgICAgICBpZiBsaW5lLnN0YXJ0c3dpdGgoJyAgICAtIC0tZXZlbnQtdHRsJyk6CiAgICAgICAgICAgIHByaW50KCdhbHJlYWR5IGhhcyBldmVudC10dGwnKQogICAgICAgICAgICByZXR1cm4KICAgICAgICBpZiBsaW5lLnN0YXJ0c3dpdGgoJyAgICAtIGt1YmUtYXBpc2VydmVyJyk6CiAgICAgICAgICAgIHByaW50KCdpbnNlcnRpbmcgZXZlbnQtdHRsJykKICAgICAgICAgICAgY29uZmlnX2xpbmVzLmluc2VydChpKzEsJyAgICAtIC0tZXZlbnQtdHRsPTcyaCcpCiAgICAgICAgICAgIHJldHVybgogICAgcHJpbnQoIm5vICcgICAgLS0ga3ViZS1hcGlzZXJ2ZXInIGZvdW5kIikKCmZwYXRoPScvZXRjL2t1YmVybmV0ZXMvbWFuaWZlc3RzL2t1YmUtYXBpc2VydmVyLnlhbWwnCndpdGggb3BlbihmcGF0aCkgYXMgZjoKICAgIGNvbnRlbnQ9Zi5yZWFkKCkKICAgIGxpbmVzPWNvbnRlbnQuc3BsaXQoJ1xuJykKICAgICMgYWRkIC0tZXZlbnQtdHRsCiAgICBhZGRfZXZlbnRfdHRsKGxpbmVzKQogICAgd2l0aCBvcGVuKGZwYXRoLCd3JykgYXMgZjoKICAgICAgICBmLndyaXRlKCdcbicuam9pbihsaW5lcykp
-        name: embed_script
-      comment: "\u672A\u9650\u5B9A\u811A\u672C"
-      name: _update_k8s_config.py
-    - children:
-      - comment: "\u6267\u884C"
-        name: run
-      - comment: "\u53D6\u6D88\u6267\u884C"
-        name: cancel
-      - comment: aW1wb3J0IG9zLHN5cwpDVVJfRkRJUiA9IG9zLnBhdGguZGlybmFtZShvcy5wYXRoLmFic3BhdGgoX19maWxlX18pKTsgY3VyX3NjYW49Q1VSX0ZESVI7IHNjYW49W1sicHlsaWIucHkiIGluIG9zLmxpc3RkaXIoY3VyX3NjYW4pLGN1cl9zY2FuLGV4ZWMoJ2dsb2JhbCBjdXJfc2NhbjtjdXJfc2Nhbj1vcy5wYXRoLmpvaW4oY3VyX3NjYW4sICIuLiIpJyldIGZvciBfIGluIHJhbmdlKDEwKV07IGZvdW5kX3B5bGliPVt4WzBdIGZvciB4IGluIHNjYW5dOyBweWxpYl9kaXJfaWR4PWZvdW5kX3B5bGliLmluZGV4KFRydWUpOyBhc3NlcnQgcHlsaWJfZGlyX2lkeD49MCwgInB5bGliLnB5IG5vdCBmb3VuZCI7IHByaW50KHNjYW5bcHlsaWJfZGlyX2lkeF1bMV0pOyBST09UX0RJUj1vcy5wYXRoLmFic3BhdGgob3MucGF0aC5qb2luKENVUl9GRElSLCBzY2FuW3B5bGliX2Rpcl9pZHhdWzFdKSk7IHN5cy5wYXRoLmFwcGVuZChST09UX0RJUikKb3MuY2hkaXIoQ1VSX0ZESVIpCmltcG9ydCBweWxpYgoKY29uZj1weWxpYi5Db25mUmVhZGVyKCkKbWFpbl9ub2RlPWNvbmYuZ2V0X21haW5fbm9kZSgpCm1haW5fbm9kZV9pcD1tYWluX25vZGVbJ2lwJ10KbWFpbl9ub2RlX3JjbG9uZT1jb25mLmdldF9tYWluX25vZGVfcmNsb25lKCkKcHlsaWIub3Nfc3lzdGVtX3N1cmUoZidyY2xvbmUgc3luYyBfdXBkYXRlX2s4c19jb25maWcucHkge21haW5fbm9kZV9yY2xvbmV9Oi90bXAnKQpweWxpYi5vc19zeXN0ZW1fc3VyZShmJ3NzaCB0ZWxlaW5mcmFAe21haW5fbm9kZV9pcH0gInN1ZG8gcHl0aG9uMyAvdG1wL191cGRhdGVfazhzX2NvbmZpZy5weSInKQpweWxpYi5vc19zeXN0ZW1fc3VyZShmJ3NzaCB0ZWxlaW5mcmFAe21haW5fbm9kZV9pcH0gInJtIC1mIC90bXAvX3VwZGF0ZV9rOHNfY29uZmlnLnB5Iicp
-        name: embed_script
-      comment: "\u672A\u9650\u5B9A\u811A\u672C"
-      name: update_k8s_config.py
-    comment: "\u76EE\u5F55"
-    name: k8s
-  - children: []
-    comment: "\u76EE\u5F55"
-    name: new_sudo_user
-  - children:
-    - children:
-      - comment: "\u6267\u884C"
-        name: run
-      - comment: "\u53D6\u6D88\u6267\u884C"
-        name: cancel
-      - comment: aW1wb3J0IG9zLHN5cyxnZXRwYXNzLHlhbWwsc3VicHJvY2VzcwpDVVJfRkRJUiA9IG9zLnBhdGguZGlybmFtZShvcy5wYXRoLmFic3BhdGgoX19maWxlX18pKTsgY3VyX3NjYW49Q1VSX0ZESVI7IHNjYW49W1sicHlsaWIucHkiIGluIG9zLmxpc3RkaXIoY3VyX3NjYW4pLGN1cl9zY2FuLGV4ZWMoJ2dsb2JhbCBjdXJfc2NhbjtjdXJfc2Nhbj1vcy5wYXRoLmpvaW4oY3VyX3NjYW4sICIuLiIpJyldIGZvciBfIGluIHJhbmdlKDEwKV07IGZvdW5kX3B5bGliPVt4WzBdIGZvciB4IGluIHNjYW5dOyBweWxpYl9kaXJfaWR4PWZvdW5kX3B5bGliLmluZGV4KFRydWUpOyBhc3NlcnQgcHlsaWJfZGlyX2lkeD49MCwgInB5bGliLnB5IG5vdCBmb3VuZCI7IHByaW50KHNjYW5bcHlsaWJfZGlyX2lkeF1bMV0pOyBST09UX0RJUj1vcy5wYXRoLmFic3BhdGgob3MucGF0aC5qb2luKENVUl9GRElSLCBzY2FuW3B5bGliX2Rpcl9pZHhdWzFdKSk7IHN5cy5wYXRoLmFwcGVuZChST09UX0RJUikKb3MuY2hkaXIoQ1VSX0ZESVIpCmltcG9ydCBweWxpYgoKCgpwcmludCgiXG50eXBlIGluIHlvdXIgc3NoIHBhc3N3b3JkOiIpCiMgd2FpdCBmb3IgdXNlciBpbnB1dCBwYXNzd29yZApwYXNzd29yZD1nZXRwYXNzLmdldHBhc3MoKQpkZWYgZW5jcnlwdF9wYXNzd29yZChwYXNzd29yZCk6CiAgICB0cnk6CiAgICAgICAgIyDosIPnlKggcmNsb25lIG9ic2N1cmUg5ZG95Luk5p2l5Yqg5a+G5a+G56CBCiAgICAgICAgcmVzdWx0ID0gc3VicHJvY2Vzcy5ydW4oWydyY2xvbmUnLCAnb2JzY3VyZScsIHBhc3N3b3JkXSwgc3Rkb3V0PXN1YnByb2Nlc3MuUElQRSwgc3RkZXJyPXN1YnByb2Nlc3MuUElQRSkKICAgICAgICByZXR1cm4gcmVzdWx0LnN0ZG91dC5kZWNvZGUoKS5zdHJpcCgpCiAgICBleGNlcHQgc3VicHJvY2Vzcy5DYWxsZWRQcm9jZXNzRXJyb3IgYXMgZToKICAgICAgICBwcmludChmIuWKoOWvhuWvhueggeaXtuWHuumUmToge2V9IikKICAgICAgICBleGl0KDEpCnBhc3N3b3JkX2VuYz1lbmNyeXB0X3Bhc3N3b3JkKHBhc3N3b3JkKQoKCnByaW50KCJcbmNvbmZpZ3VyaW5nIHNzaCBubyBwYXNzIikKbWFpbl9ub2RlPXB5bGliLkNvbmZSZWFkZXIoKS5nZXRfbWFpbl9ub2RlKCkKbWFpbl9ub2RlX2lwPW1haW5fbm9kZVsnaXAnXQpzc2hfc2VjcmV0PSB5YW1sLnNhZmVfbG9hZChweWxpYi5nZXRfc2VjcmV0X2RhdGEoa2V5PSdub2Rlc19jb25mJykpWydzc2hTZWNyZXQnXQojIHB5bGliLm9zX3N5c3RlbV9zdXJlKGYic3NoLWtleXNjYW4gLUgge21haW5fbm9kZV9pcH0gPj4gfi8uc3NoL2tub3duX2hvc3RzIikKc3NoX2Rpcj1vcy5wYXRoLmpvaW4ocHlsaWIuY3VycmVudF91c2VyX2RpcigpLCIuc3NoIikKcHlsaWIubWtkaXIoc3NoX2RpcikKCm5lZWRfYWRkX3NlY3JldD1GYWxzZQp0cnk6CiAgICB3aXRoIG9wZW4ob3MucGF0aC5qb2luKHNzaF9kaXIsImlkX2VkMjU1MTkiKSwiciIpIGFzIGY6CiAgICAgICAgY29udGVudD1mLnJlYWQoKQogICAgICAgIGlmIGNvbnRlbnQuZmluZChzc2hfc2VjcmV0KT09LTE6CiAgICAgICAgICAgIG5lZWRfYWRkX3NlY3JldApleGNlcHQ6CiAgICBuZWVkX2FkZF9zZWNyZXQ9VHJ1ZQoKaWYgbmVlZF9hZGRfc2VjcmV0OgogICAgd2l0aCBvcGVuKG9zLnBhdGguam9pbihzc2hfZGlyLCJpZF9lZDI1NTE5IiksImEiKSBhcyBmMjoKICAgICAgICBmMi53cml0ZShzc2hfc2VjcmV0KQogICAgICAgIAppZiBvcy5uYW1lICE9ICdudCc6CiAgICBweWxpYi5vc19zeXN0ZW1fc3VyZShmImNobW9kIDYwMCB+Ly5zc2gvaWRfZWQyNTUxOSIpCgoKcHJpbnQoIlxuY29uZmlndXJpbmcgcmNsb25lIikKY29uZmlnPWYiIiJbcmVtb3RlXQp0eXBlID0gc2Z0cApob3N0ID0ge21haW5fbm9kZV9pcH0KdXNlciA9IHRlbGVpbmZyYQpwYXNzID0ge3Bhc3N3b3JkX2VuY30Kc2hlbGwgdHlwZSA9IHVuaXgKbWQ1c3VtX2NvbW1hbmQgPSBtZDVzdW0Kc2hhMXN1bV9jb21tYW5kID0gc2hhMXN1bSIiIgpyY2xvbmVfY29uZl9wYXRoPW9zLnBhdGguam9pbihweWxpYi5jdXJyZW50X3VzZXJfZGlyKCksInJjbG9uZV9tYWluX25vZGUuY29uZiIpCndpdGggb3BlbihyY2xvbmVfY29uZl9wYXRoLCJ3IikgYXMgZjoKICAgIGYud3JpdGUoY29uZmlnKQpweWxpYi5vc19zeXN0ZW1fc3VyZShmInJjbG9uZSBjb25maWcgaW1wb3J0IHtyY2xvbmVfY29uZl9wYXRofSIp
-        name: embed_script
-      comment: "\u672A\u9650\u5B9A\u811A\u672C"
-      name: set_ssh_and_rclone.py
-    comment: "\u76EE\u5F55"
-    name: ssh_rclone
-  - children:
-    - children:
-      - children:
-        - comment: "\u6267\u884C"
-          name: run
-        - comment: "\u53D6\u6D88\u6267\u884C"
-          name: cancel
-        - comment: aW1wb3J0IG9zLCBzeXMsIGJhc2U2NAoKZGVmIG9zX3N5c3RlbShjb21tYW5kKToKICAgIHByaW50KCJSVU4gQ01EOiIsY29tbWFuZCkKICAgIG9zLnN5c3RlbShjb21tYW5kKQoKaWYgbGVuKHN5cy5hcmd2KSE9MjoKICAgIHByaW50KCJVc2FnZTogcHl0aG9uMyByZW1vdGVfdXBkYXRlX3NzaC5weSBbc3NoIHNlY3JldF0iKQogICAgZXhpdCgxKQoKc3NoX3NlY3JldD1zeXMuYXJndlsxXQpzc2hfc2VjcmV0PWJhc2U2NC5iNjRkZWNvZGUoc3NoX3NlY3JldCkuZGVjb2RlKCkKCnNzaHBhdGg9b3MucGF0aC5leHBhbmR1c2VyKCJ+Ly5zc2giKQpzc2hhdXRocGF0aD1vcy5wYXRoLmpvaW4oc3NocGF0aCwiYXV0aG9yaXplZF9rZXlzIikKIyB2ZXJpZnkgdXNlciAuc3NoL2F1dGhvcml6ZWRfa2V5cyBleGlzdHMKaWYgbm90IG9zLnBhdGguZXhpc3RzKHNzaGF1dGhwYXRoKToKICAgIG9zX3N5c3RlbShmIm1rZGlyIC1wIHtzc2hwYXRofSIpCiAgICAjIG9zX3N5c3RlbSgidG91Y2ggfi8uc3NoL2F1dGhvcml6ZWRfa2V5cyIpCiAgICB3aXRoIG9wZW4oc3NoYXV0aHBhdGgsInciKSBhcyBmOgogICAgICAgIGYud3JpdGUoIiIpCgp3aXRoIG9wZW4oc3NoYXV0aHBhdGgpIGFzIGY6CiAgICBjb250ZW50PWYucmVhZCgpCiAgICBpZiBzc2hfc2VjcmV0IG5vdCBpbiBjb250ZW50OgogICAgICAgIG5ld19hdXRoPWNvbnRlbnQrIlxuIitzc2hfc2VjcmV0CiAgICBlbHNlOgogICAgICAgIG5ld19hdXRoPU5vbmUKCmlmIG5ld19hdXRoOgogICAgd2l0aCBvcGVuKHNzaGF1dGhwYXRoLCJ3IikgYXMgZjoKICAgICAgICBmLndyaXRlKG5ld19hdXRoKQplbHNlOgogICAgcHJpbnQoIlNTSCBrZXkgYWxyZWFkeSBleGlzdHMsIHNraXAgYWRkaW5nIikKCm9zX3N5c3RlbShmImNobW9kIDYwMCB7c3NoYXV0aHBhdGh9IikKCmRlZiBkZWxldGVfc2VsZigpOgogICAgc2VsZj1vcy5wYXRoLmFic3BhdGgoX19maWxlX18pCiAgICBvcy5yZW1vdmUoc2VsZikKICAgIHByaW50KCJSZW1vdmVkIHNlbGYsIHVwZGF0ZSBmaW5pc2hlZCIpCmRlbGV0ZV9zZWxmKCk=
-          name: embed_script
-        comment: "\u672A\u9650\u5B9A\u811A\u672C"
-        name: remote_update_ssh.py
-      comment: "\u76EE\u5F55"
-      name: template
-    - children:
-      - comment: "\u6267\u884C"
-        name: run
-      - comment: "\u53D6\u6D88\u6267\u884C"
-        name: cancel
-      - comment: aW1wb3J0IG9zLCBzeXMKQ1VSX0ZESVIgPSBvcy5wYXRoLmRpcm5hbWUob3MucGF0aC5hYnNwYXRoKF9fZmlsZV9fKSk7IGN1cl9zY2FuPUNVUl9GRElSOyBzY2FuPVtbInB5bGliLnB5IiBpbiBvcy5saXN0ZGlyKGN1cl9zY2FuKSxjdXJfc2NhbixleGVjKCdnbG9iYWwgY3VyX3NjYW47Y3VyX3NjYW49b3MucGF0aC5qb2luKGN1cl9zY2FuLCAiLi4iKScpXSBmb3IgXyBpbiByYW5nZSgxMCldOyBmb3VuZF9weWxpYj1beFswXSBmb3IgeCBpbiBzY2FuXTsgcHlsaWJfZGlyX2lkeD1mb3VuZF9weWxpYi5pbmRleChUcnVlKTsgYXNzZXJ0IHB5bGliX2Rpcl9pZHg+PTAsICJweWxpYi5weSBub3QgZm91bmQiOyBwcmludChzY2FuW3B5bGliX2Rpcl9pZHhdWzFdKTsgUk9PVF9ESVI9b3MucGF0aC5hYnNwYXRoKG9zLnBhdGguam9pbihDVVJfRkRJUiwgc2NhbltweWxpYl9kaXJfaWR4XVsxXSkpOyBzeXMucGF0aC5hcHBlbmQoUk9PVF9ESVIpCm9zLmNoZGlyKENVUl9GRElSKQppbXBvcnQgcHlsaWIsIHlhbWwsIGJhc2U2NAoKIyBjb25maWdzCk5PREVTX0NPTkY9Im5vZGVzX2pkLnltbCIKCiMgbG9naWNzCndpdGggb3Blbihvcy5wYXRoLmpvaW4oUk9PVF9ESVIsTk9ERVNfQ09ORiksZW5jb2Rpbmc9J3V0Zi04JykgYXMgZjoKICAgIGNvbmY9eWFtbC5zYWZlX2xvYWQoZikKCnNzaF9wcml2YXRlPWNvbmZbJ3NzaF9wcml2YXRlJ10Kc3NoX3ByaXZhdGVfYmFzZTY0PWJhc2U2NC5iNjRlbmNvZGUoc3NoX3ByaXZhdGUuZW5jb2RlKCkpLmRlY29kZSgpCmZvciBub2RlIGluIGNvbmZbJ25vZGVzJ106CiAgICBpcD1ub2RlWyJpcCJdCiAgICB1c2VyPW5vZGVbInVzZXIiXQogICAgcmVtb3RlX3J1bl9zY3JpcHQ9b3MucGF0aC5qb2luKENVUl9GRElSLCJ0ZW1wbGF0ZS9yZW1vdGVfdXBkYXRlX3NzaC5weSIpCiAgICBwcmludChmInVwZGF0aW5nIHNzaCBvbiBub2RlIHtpcH0gZm9yIHVzZXIge3VzZXJ9IikKICAgIHB5bGliLm9zX3N5c3RlbShmInNjcCB7cmVtb3RlX3J1bl9zY3JpcHR9IHt1c2VyfUB7aXB9On4vcmVtb3RlX3VwZGF0ZV9zc2gucHkiKQogICAgcHlsaWIub3Nfc3lzdGVtKGYnc3NoIHt1c2VyfUB7aXB9ICJweXRob24zIH4vcmVtb3RlX3VwZGF0ZV9zc2gucHkge3NzaF9wcml2YXRlX2Jhc2U2NH0iJykK
-        name: embed_script
-      comment: "\u672A\u9650\u5B9A\u811A\u672C"
-      name: update_ssh.py
-    comment: "\u76EE\u5F55"
-    name: update_cluster_ssh_key
-  - children:
-    - comment: "\u6267\u884C"
-      name: run
-    - comment: "\u53D6\u6D88\u6267\u884C"
-      name: cancel
-    - comment: cHJpbnQoImhlbGxvIHdvcmxkIik=
-      name: embed_script
-    comment: "\u672A\u9650\u5B9A\u811A\u672C"
-    name: test2.py
   comment: "\u76EE\u5F55 - \u66F4\u65B0\u914D\u7F6E"
   name: update_config
 - comment: "\u5C06\u672C\u5730\u6700\u65B0\u6A21\u677F\u4E0A\u4F20\u5230\u7F51\u7EDC\
