@@ -1,8 +1,11 @@
 package util
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -253,6 +256,98 @@ func DownloadFile(url, filename string) error {
 
 // 	return string(respBody), nil
 // }
+
+func HttpAuth(url string, user string, pw string) ([]byte, error) {
+	// 创建基本认证
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		// fmt.Printf("Error creating request: %v\n", err)
+		return []byte{}, fmt.Errorf("failed to create request: %v, url: %s", err, url)
+	}
+
+	// 设置基本认证
+	req.SetBasicAuth(user, pw)
+
+	// 发送 GET 请求
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		// fmt.Printf("Request failed: %v\n", err)
+		return []byte{}, fmt.Errorf("failed to send request: %v, url: %s", err, url)
+	}
+	defer resp.Body.Close()
+
+	// 检查响应状态
+	if resp.StatusCode != http.StatusOK {
+		// fmt.Printf("Request failed with status: %v\n", resp.Status)
+		return []byte{}, fmt.Errorf("request failed with status: %v, url: %s", resp.Status, url)
+	}
+
+	// 读取响应体
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		// fmt.Printf("Error reading response body: %v\n", err)
+		return []byte{}, fmt.Errorf("failed to read response body: %v, url: %s", err, url)
+	}
+
+	return body, nil
+
+	// // 假设响应体是 JSON 格式并且包含 "token" 字段
+	// var result map[string]interface{}
+	// if err := json.Unmarshal(body, &result); err != nil {
+	// 	fmt.Printf("Error unmarshalling response: %v\n", err)
+	// 	return
+	// }
+
+	// // 获取 token
+	// token, ok := result["token"].(string)
+	// if !ok {
+	// 	fmt.Println("No token found in response")
+	// 	return
+	// }
+}
+
+// HttpOneshot sends a POST request with the given URL and JSON object.
+// It returns the response body as a string and an error if any.
+func HttpOneshot(url string, jsonObj interface{}) ([]byte, error) {
+	jsonData := []byte{}
+	if jsonObj != nil {
+		// Marshal the JSON object into a JSON byte array
+		jsonData_, err := json.Marshal(jsonObj)
+		if err != nil {
+			return []byte{}, fmt.Errorf("failed to marshal JSON: %v", err)
+		}
+		jsonData = jsonData_
+	}
+
+	// Create a new HTTP POST request
+	req, err := http.NewRequest("POST", url, bytes.NewBuffer(jsonData))
+	if err != nil {
+		return []byte{}, fmt.Errorf("failed to create HTTP request: %v", err)
+	}
+	req.Header.Set("Content-Type", "application/json")
+
+	// Send the HTTP request
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		return []byte{}, fmt.Errorf("failed to send HTTP request: %v", err)
+	}
+	defer resp.Body.Close()
+
+	// Read the response body
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return []byte{}, fmt.Errorf("failed to read response body: %v", err)
+	}
+
+	// Check for non-2xx status codes
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return []byte{}, fmt.Errorf("received non-2xx response: %d, body: %s", resp.StatusCode, string(body))
+	}
+
+	return body, nil
+}
 
 func UploadMultipleFilesInOneConnection(files []string, multipartApi string) (string, error) {
 	if len(files) == 0 {

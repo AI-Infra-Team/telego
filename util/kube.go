@@ -26,9 +26,13 @@ type ContainerRegistryConfTls struct {
 // 配置容器注册表的信息
 type ContainerRegistryConf struct {
 	// Host     string                    `json:"host" yaml:"host"`          // 注册表地址
-	User     string                    `json:"user" yaml:"user"`                   // 用户名
-	Password string                    `json:"password" yaml:"password"`           // 密码
-	Tls      *ContainerRegistryConfTls `json:"tls,omitempty" yaml:"tls,omitempty"` // TLS 配置（可选）
+	User                      string                    `json:"user" yaml:"user"`         // 用户名
+	Password                  string                    `json:"password" yaml:"password"` // 密码
+	UploaderStoreAddr         string                    `json:"uploader_store_addr" yaml:"uploader_store_addr"`
+	UploaderStoreAdmin        string                    `json:"uploader_store_admin" yaml:"uploader_store_admin"`
+	UploaderStoreAdminPw      string                    `json:"uploader_store_admin_pw" yaml:"uploader_store_admin_pw"`
+	UploaderStoreTransferAddr string                    `json:"uploader_store_transfer_addr" yaml:"uploader_store_transfer_addr"`
+	Tls                       *ContainerRegistryConfTls `json:"tls,omitempty" yaml:"tls,omitempty"` // TLS 配置（可选）
 }
 
 // 根据 Cluster 名称获取对应的 Context 名称

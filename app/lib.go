@@ -198,6 +198,7 @@ func Main() {
 		ModJobImgPrepare,
 		ModJobCreateNewUser,
 		ModJobFetchAdminKubeconfig,
+		ModJobConfigExporter,
 		ModJobRclone,
 		ModJobSshFs,
 	}

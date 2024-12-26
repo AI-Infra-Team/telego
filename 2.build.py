@@ -243,3 +243,54 @@ else:
     os.system(f"{prefix}chown {curuser} /usr/bin/telego")
     
 """)
+    
+with open("dist/install.sh", "w") as f:
+    f.write(f"""
+#!/bin/bash
+FILESERVER="http://{main_node_ip}:8003/bin_telego"
+"""+"""
+# Check OS type
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    ARCH=""
+    MACHINE_TYPE=$(uname -m)
+
+    if [ "$MACHINE_TYPE" == "aarch64" ]; then
+        ARCH="arm64"
+    elif [ "$MACHINE_TYPE" == "x86_64" ]; then
+        ARCH="amd64"
+    fi
+
+    TEMP_DIR=$(mktemp -d)
+
+    # Check if root
+    if [ $(id -u) -ne 0 ]; then
+        PREFIX="sudo"
+    else
+        PREFIX=""
+    fi
+
+    # Download and install telego
+    cd $TEMP_DIR
+    curl -L "$FILESERVER/telego_linux_${ARCH}" -o telego
+    chmod +x telego
+
+    CUR_USER=$(whoami)
+    $PREFIX mv telego /usr/bin/telego
+    $PREFIX chown $CUR_USER /usr/bin/telego
+elif [[ "$OSTYPE" == "msys" || "$OSTYPE" == "cygwin" ]]; then
+    TEMP_DIR="$HOME\\telego_install"
+
+    # Create temporary directory
+    mkdir -p $TEMP_DIR
+
+    # Download telego for Windows
+    curl -L "$FILESERVER/telego_windows_amd64.exe" -o "$TEMP_DIR\\telego.exe"
+
+    # Move to System32
+    mv "$TEMP_DIR\\telego.exe" "C:\\Windows\\System32\\telego.exe"
+else
+    echo "Unsupported OS"
+    exit 1
+fi
+
+""")

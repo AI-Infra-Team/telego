@@ -94,6 +94,15 @@ type PubConfType interface {
 	PubConfPath() string
 }
 
+func NewPubConfType(path string) PubConfType {
+	switch path {
+	case PubConfTypeImgUploaderUrl{}.PubConfPath():
+		return PubConfTypeImgUploaderUrl{}
+	default:
+		return nil
+	}
+}
+
 type PubConfTypeImgUploaderUrl struct{}
 
 var _ PubConfType = PubConfTypeImgUploaderUrl{}
@@ -109,6 +118,17 @@ func (r PubConfTypeImgUploaderUrl) Template() string {
 type SecretConfType interface {
 	ConfTypeBase
 	SecretConfPath() string
+}
+
+func NewSecretConfType(t string) SecretConfType {
+	switch t {
+	case SecretConfTypeAdminKubeconfig{}.SecretConfPath():
+		return SecretConfTypeAdminKubeconfig{}
+	case SecretConfTypeImgRepo{}.SecretConfPath():
+		return SecretConfTypeImgRepo{}
+	default:
+		return nil
+	}
 }
 
 type SecretConfTypeAdminKubeconfig struct{}

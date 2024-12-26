@@ -50,6 +50,26 @@ func (b *CmdBuilder) SetEnv(envs ...string) *CmdBuilder {
 	return b
 }
 
+func (b *CmdBuilder) AsyncRun() (*exec.Cmd, error) {
+
+	errWriter := io.MultiWriter(b.errWriters...)
+	outWriter := io.MultiWriter(b.outWriters...)
+
+	if b.showProgress {
+		b.cmd.Stdout = os.Stdout
+		b.cmd.Stderr = os.Stderr
+	} else {
+		b.cmd.Stdout = outWriter
+		b.cmd.Stderr = errWriter
+	}
+
+	// 启动命令
+	if err := b.cmd.Start(); err != nil {
+		return b.cmd, fmt.Errorf("error starting command: %v", err)
+	}
+	return b.cmd, nil
+}
+
 func (b *CmdBuilder) BlockRun() (string, error) {
 
 	errWriter := io.MultiWriter(b.errWriters...)
@@ -65,12 +85,12 @@ func (b *CmdBuilder) BlockRun() (string, error) {
 
 	// 启动命令
 	if err := b.cmd.Start(); err != nil {
-		return "", fmt.Errorf("error starting command: %v", err)
+		return b.outputBuffer.String(), fmt.Errorf("error starting command: %v", err)
 	}
 
 	// 等待命令执行完成
 	if err := b.cmd.Wait(); err != nil {
-		return "", fmt.Errorf("error waiting for command: %v", err)
+		return b.outputBuffer.String(), fmt.Errorf("error waiting for command: %v", err)
 	}
 
 	return b.outputBuffer.String(), nil
