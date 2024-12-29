@@ -1,3 +1,5 @@
+# check the config discription
+# https://qcnoe3hd7k5c.feishu.cn/wiki/MoDOw2fxnidARCkE2hKc60jHn8b?fromScene=spaceOverview
 main_node_ip: 192.168.31.96
 main_node_user: root
 image_repo_with_prefix: http://192.168.31.96:5000

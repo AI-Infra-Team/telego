@@ -12,8 +12,10 @@ import (
 	"os/exec"
 	"path"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
+	"time"
 
 	"telego/util"
 	"telego/util/strext"
@@ -21,6 +23,7 @@ import (
 	"github.com/barweiss/go-tuple"
 	"github.com/fatih/color"
 	"github.com/gin-gonic/gin"
+	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/thoas/go-funk"
 	"gopkg.in/yaml.v3"
@@ -84,8 +87,26 @@ func (m *ModJobImgUploaderStruct) uploadImageV2() {
 		return tempStoreInfo, tempStorePw
 	}()
 
-	util.PrintStep("ImgUploader", "mounting remote store")
-	mountPath, mountHandle := func() (string, *exec.Cmd) {
+	mountPath := "D:/img-uploader-temp"
+	os.RemoveAll(mountPath)
+	os.MkdirAll(filepath.Join(mountPath, "使用传输工具在此新建任意文件夹后，等待刷新和下一步提示"), 0755)
+	util.PrintStep("ImgUploader", fmt.Sprintf("请在文件传输助手中进入临时目录 %s, 并新建任意文件夹", mountPath))
+	for {
+		// if dir list >0 then break
+		list, err := os.ReadDir(mountPath)
+		if err != nil {
+			fmt.Println(color.RedString("read dir failed %s", err))
+			os.Exit(1)
+		}
+		if len(list) > 1 {
+			break
+		}
+	}
+
+	util.PrintStep("ImgUploader", "请不要切换传输助手路径，远程目录挂载中")
+	os.RemoveAll(mountPath)
+
+	mountPath, mountHandle := func() (string, *util.CmdBuilder) {
 		if util.IsWindows() {
 			// use rclone to mount remote
 			rcloneTempRemoteName := "img-uploader-temp-" + tempStoreInfo.User
@@ -94,9 +115,19 @@ func (m *ModJobImgUploaderStruct) uploadImageV2() {
 			if err != nil {
 				fmt.Println(color.RedString("Failed to config rclone: %v", err))
 			}
-			mountPath := "D:/img-uploader-temp"
-			mountHandle, err := util.ModRunCmd.NewBuilder("rclone", "mount", rcloneTempRemoteName+":"+path.Join("/"), mountPath).
-				ShowProgress().AsyncRun()
+
+			cmds := ModJobRclone.mountCmd(&rcloneMountArgv{
+				remotePath: rcloneTempRemoteName + ":/",
+				localPath:  mountPath,
+			})
+			// .NewCmd(JobRcloneTypeMount{
+			// 	rcloneMountArgv: rcloneMountArgv{
+			// 		remotePath: rcloneTempRemoteName + ":/",
+			// 		localPath:  mountPath,
+			// 	},
+			// })
+			mountHandle := util.ModRunCmd.NewBuilder(cmds[0], cmds[1:]...)
+			_, err = mountHandle.AsyncRun()
 			if err != nil {
 				fmt.Println(color.RedString("Failed to mount rclone: %v", err))
 			}
@@ -109,15 +140,32 @@ func (m *ModJobImgUploaderStruct) uploadImageV2() {
 	}()
 	defer func() {
 		if mountHandle != nil {
-			mountHandle.Process.Kill()
+			mountHandle.Cmd.Process.Kill()
 		}
 	}()
+	for {
+		time.Sleep(1 * time.Second)
+		_, err := os.Stat(mountPath)
+		if err == nil {
+			break
+		}
+	}
 
 	util.PrintStep("ImgUploader", "已挂载到 "+mountPath+", 请用文件传输助手上传镜像文件到对应目录，并在终端输入 y 后回车")
+	tempfile := "现在开始往当前文件夹上传镜像，上传完后回到终端确认"
+	file, err := os.Create(path.Join(mountPath, tempfile))
+	if err != nil {
+		fmt.Println(color.RedString("创建临时文件失败"))
+		os.Exit(1)
+	}
+	file.Close()
+
+	imglist := []string{}
+	remotelist := []string{}
 	{
 		reader := bufio.NewReader(os.Stdin)
 		for {
-			fmt.Print("请输入 y 后回车继续: ")
+			fmt.Print("直接回车校验列表，输入 y 回车开始上传: ")
 			input, err := reader.ReadString('\n')
 			if err != nil {
 				fmt.Println("\n输入读取失败，请重试")
@@ -127,22 +175,83 @@ func (m *ModJobImgUploaderStruct) uploadImageV2() {
 			// 去除多余的空格和换行符
 			input = strings.TrimSpace(input)
 
-			if input == "y" {
-				fmt.Println("输入正确，程序继续执行...")
+			if len(imglist) > 0 && funk.Equal(imglist, remotelist) && input == "y" {
+				fmt.Println("开始上传...")
 				break
 			} else {
-				fmt.Println("输入无效，请输入 y 后回车继续。")
+				fmt.Println("开始校验列表...")
+				imglist = func() []string {
+					// list dir
+					list, err := os.ReadDir(mountPath)
+					if err != nil {
+						fmt.Println(color.RedString("读取目录失败，请重试，或寻找管理员寻求帮助, err: %s", err))
+						os.Exit(1)
+					}
+
+					tarfiles := []string{}
+					for _, file := range list {
+						if file.IsDir() {
+							continue
+						}
+						if !strings.HasSuffix(file.Name(), ".tar") {
+							continue
+						}
+						tarfiles = append(tarfiles, file.Name())
+					}
+					return tarfiles
+				}()
+
+				resJson, err := util.HttpOneshot(util.UrlJoin(img_upload_server, "/uploadv2"), ImgUploadUploadedReq{
+					Username:    tempStoreInfo.User,
+					PasswordB64: tempStoreInfo.Pwb64,
+					CheckDir:    true,
+				})
+				if err != nil {
+					fmt.Println(color.RedString("请求远程镜像列表失败, err: %s", err))
+					return
+				}
+				res := map[string]interface{}{}
+				if err := json.Unmarshal(resJson, &res); err != nil {
+					fmt.Println(color.RedString("解析返回列表 json: %v, err: %s", string(resJson), err))
+					return
+				}
+				var ok bool
+				remotelist_, ok := res["success"]
+				if !ok {
+					fmt.Println(color.RedString("解析返回列表 json: %v, map: %v, err: %v", string(resJson), res, ok))
+					return
+				}
+				err = mapstructure.Decode(remotelist_, &remotelist)
+				if err != nil {
+					fmt.Println(color.RedString("解析lisst to string err %v", err))
+					return
+				}
+				remotelist = funk.Map(remotelist, func(s string) string {
+					return path.Base(s)
+				}).([]string)
+
+				sort.Strings(remotelist)
+				sort.Strings(imglist)
+				if funk.Equal(remotelist, imglist) {
+					fmt.Println(color.GreenString("镜像列表已同步"))
+					for _, v := range remotelist {
+						fmt.Println(color.GreenString("- %s", v))
+					}
+					fmt.Println()
+				} else {
+					fmt.Println(color.YellowString("列表未完全同步，请稍后回车校验"))
+				}
 			}
 		}
 	}
 
-	util.PrintStep("ImgUploader", "开始上传镜像")
+	util.PrintStep("ImgUploader", fmt.Sprintf("开始上传镜像 %v", imglist))
 	resJson, err := util.HttpOneshot(util.UrlJoin(img_upload_server, "/uploadv2"), ImgUploadUploadedReq{
 		Username:    tempStoreInfo.User,
 		PasswordB64: tempStoreInfo.Pwb64,
 	})
 	if err != nil {
-		fmt.Println(color.RedString("上传失败，请重试，或寻找管理员寻求帮助, err: %s", err))
+		fmt.Println(color.RedString("上传失败，请重试，或寻找管理员寻求帮助, err: %v", err))
 		return
 	}
 	fmt.Println(color.GreenString("上传成功, result: %s", resJson))
@@ -272,6 +381,7 @@ func (m *ModJobImgUploaderStruct) ImgUploaderLocal(mode ImgUploaderMode) {
 type ImgUploadUploadedReq struct {
 	Username    string `json:"user"`
 	PasswordB64 string `json:"pwb64"`
+	CheckDir    bool   `json:"check_dir,omitempty"`
 }
 
 type ImgUploadNewRemoteStoreResponse struct {
@@ -295,6 +405,26 @@ func imgUploaderUploadHandlerV2(c *gin.Context, workdir string) {
 		imgdir, err := handler.findPrevTempUsr(uploaded.Username, pw)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		if uploaded.CheckDir {
+			tarlist_, err := os.ReadDir(path.Join(workdir, imgdir))
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			tarlist := make([]string, 0)
+			for _, tar := range tarlist_ {
+				if tar.IsDir() {
+					continue
+				}
+				if !strings.HasSuffix(tar.Name(), ".tar") {
+					continue
+				}
+				tarlist = append(tarlist, tar.Name())
+			}
+			c.JSON(http.StatusOK, gin.H{"success": tarlist})
 			return
 		}
 

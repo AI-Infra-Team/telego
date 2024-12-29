@@ -118,7 +118,7 @@ CMD ["bash"]
         if f in blacklist:
             continue
         os.system(f"cp -r ../{f} .")
-    os_system_sure("docker build -t telego_build .")
+    #os_system_sure("docker build -t telego_build .")
     recover_proxy()
     os.chdir("..")
     os.system("rm -rf build")

@@ -20,15 +20,19 @@ type ModRunCmdStruct struct {
 var ModRunCmd ModRunCmdStruct
 
 type CmdBuilder struct {
-	cmd          *exec.Cmd
+	Cmd          *exec.Cmd
 	outputBuffer bytes.Buffer
 	errWriters   []io.Writer
 	outWriters   []io.Writer
 	showProgress bool
 }
 
+func (b *CmdBuilder) Output() string {
+	return b.outputBuffer.String()
+}
+
 func (b *CmdBuilder) Cmds() []string {
-	return append([]string{b.cmd.Path}, b.cmd.Args...)
+	return append([]string{b.Cmd.Path}, b.Cmd.Args...)
 }
 
 func (b *CmdBuilder) ShowProgress() *CmdBuilder {
@@ -39,14 +43,14 @@ func (b *CmdBuilder) ShowProgress() *CmdBuilder {
 }
 
 func (b *CmdBuilder) SetDir(dir string) *CmdBuilder {
-	b.cmd.Dir = dir
+	b.Cmd.Dir = dir
 	return b
 }
 
 func (b *CmdBuilder) SetEnv(envs ...string) *CmdBuilder {
 	env := os.Environ()
 	env = append(env, envs...)
-	b.cmd.Env = env
+	b.Cmd.Env = env
 	return b
 }
 
@@ -56,18 +60,18 @@ func (b *CmdBuilder) AsyncRun() (*exec.Cmd, error) {
 	outWriter := io.MultiWriter(b.outWriters...)
 
 	if b.showProgress {
-		b.cmd.Stdout = os.Stdout
-		b.cmd.Stderr = os.Stderr
+		b.Cmd.Stdout = os.Stdout
+		b.Cmd.Stderr = os.Stderr
 	} else {
-		b.cmd.Stdout = outWriter
-		b.cmd.Stderr = errWriter
+		b.Cmd.Stdout = outWriter
+		b.Cmd.Stderr = errWriter
 	}
 
 	// 启动命令
-	if err := b.cmd.Start(); err != nil {
-		return b.cmd, fmt.Errorf("error starting command: %v", err)
+	if err := b.Cmd.Start(); err != nil {
+		return b.Cmd, fmt.Errorf("error starting command: %v", err)
 	}
-	return b.cmd, nil
+	return b.Cmd, nil
 }
 
 func (b *CmdBuilder) BlockRun() (string, error) {
@@ -76,20 +80,20 @@ func (b *CmdBuilder) BlockRun() (string, error) {
 	outWriter := io.MultiWriter(b.outWriters...)
 
 	if b.showProgress {
-		b.cmd.Stdout = os.Stdout
-		b.cmd.Stderr = os.Stderr
+		b.Cmd.Stdout = os.Stdout
+		b.Cmd.Stderr = os.Stderr
 	} else {
-		b.cmd.Stdout = outWriter
-		b.cmd.Stderr = errWriter
+		b.Cmd.Stdout = outWriter
+		b.Cmd.Stderr = errWriter
 	}
 
 	// 启动命令
-	if err := b.cmd.Start(); err != nil {
+	if err := b.Cmd.Start(); err != nil {
 		return b.outputBuffer.String(), fmt.Errorf("error starting command: %v", err)
 	}
 
 	// 等待命令执行完成
-	if err := b.cmd.Wait(); err != nil {
+	if err := b.Cmd.Wait(); err != nil {
 		return b.outputBuffer.String(), fmt.Errorf("error waiting for command: %v", err)
 	}
 
@@ -97,21 +101,21 @@ func (b *CmdBuilder) BlockRun() (string, error) {
 }
 
 func (b *CmdBuilder) PrintCmd() *CmdBuilder {
-	fmt.Printf("%s %v\n", b.cmd.Path, b.cmd.Args)
+	fmt.Printf("%s %v\n", b.Cmd.Path, b.Cmd.Args)
 	return b
 }
 
 func (b *CmdBuilder) WithRoot() *CmdBuilder {
-	if IsWindows() || isRoot() {
+	if IsWindows() || IsRoot() {
 		return b
 	}
-	if b.cmd.Args[0] == "sudo" {
+	if b.Cmd.Args[0] == "sudo" {
 		return b
 	}
-	nb := ModRunCmd.NewBuilder("sudo", b.cmd.Args...)
+	nb := ModRunCmd.NewBuilder("sudo", b.Cmd.Args...)
 
-	nb.SetDir(b.cmd.Dir)
-	nb.SetEnv(b.cmd.Env...)
+	nb.SetDir(b.Cmd.Dir)
+	nb.SetEnv(b.Cmd.Env...)
 	nb.errWriters = b.errWriters
 
 	return nb
@@ -132,7 +136,7 @@ func (m ModRunCmdStruct) NewBuilder(name string, args ...string) *CmdBuilder {
 	cmd := exec.Command(name, args...)
 
 	b := CmdBuilder{
-		cmd: cmd,
+		Cmd: cmd,
 	}
 	b.errWriters = []io.Writer{
 		&b.outputBuffer,
@@ -145,7 +149,7 @@ func (m ModRunCmdStruct) NewBuilder(name string, args ...string) *CmdBuilder {
 
 func (m ModRunCmdStruct) RequireRootRunCmd(name string, args ...string) (string, error) {
 	// is root
-	if IsWindows() || isRoot() {
+	if IsWindows() || IsRoot() {
 		return ModRunCmd.NewBuilder(name, args...).BlockRun()
 	}
 
@@ -186,26 +190,33 @@ func (m ModRunCmdStruct) CmdModels() CmdModels {
 	return CmdModels{}
 }
 
-func RunCmdWithTimeoutCheck(cmdStr string, timeout time.Duration, conditionMet func(output string) bool) (string, error) {
-	cmd := exec.Command("bash", "-c", cmdStr)
+// 在timeout时间范围内条件不满足，返回error
+// 满足了条件，继续
+func RunCmdWithTimeoutCheck(
+	cmdStr []string, timeout time.Duration, conditionMet func(output string) bool) (*bytes.Buffer, *exec.Cmd, error) {
+	cmd := exec.Command(cmdStr[0], cmdStr[1:]...)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return "", fmt.Errorf("failed to get stdout: %w", err)
+		return nil, nil, fmt.Errorf("failed to get stdout: %w", err)
+	}
+	stderr, err := cmd.StderrPipe()
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get stderr: %w", err)
 	}
 
 	if err := cmd.Start(); err != nil {
-		return "", fmt.Errorf("failed to start command: %w", err)
+		return nil, nil, fmt.Errorf("failed to start command: %w", err)
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 
-	var accumulatedOutput bytes.Buffer
+	var accumulatedOutput *bytes.Buffer = &bytes.Buffer{}
 	done := make(chan struct{})
 
 	// 协程不断监控输出，如果 conditionMet == true，则取消超时机制
 	go func() {
-		scanner := bufio.NewScanner(stdout)
+		scanner := bufio.NewScanner(io.MultiReader(stdout, stderr))
 		for scanner.Scan() {
 			line := scanner.Text()
 			accumulatedOutput.WriteString(line + "\n")
@@ -221,15 +232,15 @@ func RunCmdWithTimeoutCheck(cmdStr string, timeout time.Duration, conditionMet f
 	case <-ctx.Done(): // ctx.timeout 时触发
 		if ctx.Err() == context.DeadlineExceeded {
 			_ = cmd.Process.Kill() // 超时强制结束子进程
-			return accumulatedOutput.String(), fmt.Errorf("timeout exceeded, process killed")
+			return nil, nil, fmt.Errorf("timeout exceeded, process killed")
 		}
 	case <-done: // close(done) 时触发
 		// 等待 cmd 任务结束
 	}
 
-	if err := cmd.Wait(); err != nil {
-		return accumulatedOutput.String(), fmt.Errorf("process exited with error: %w", err)
-	}
+	// if err := cmd.Wait(); err != nil {
+	// 	return accumulatedOutput.String(), fmt.Errorf("process exited with error: %w", err)
+	// }
 
-	return accumulatedOutput.String(), nil
+	return accumulatedOutput, cmd, nil
 }

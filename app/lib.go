@@ -200,7 +200,7 @@ func Main() {
 		ModJobFetchAdminKubeconfig,
 		ModJobConfigExporter,
 		ModJobRclone,
-		ModJobSshFs,
+		// ModJobSshFs,
 	}
 	for _, mod := range jobmods {
 		rootCmd.AddCommand(mod.ParseJob(&cobra.Command{

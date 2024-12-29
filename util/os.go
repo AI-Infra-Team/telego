@@ -104,7 +104,7 @@ func HasNetwork() bool {
 	return false
 }
 
-func isRoot() bool {
+func IsRoot() bool {
 	currentUser, err := user.Current()
 	if err != nil {
 		fmt.Println("Error retrieving user:", err)
