@@ -89,7 +89,12 @@ func (m *ModJobImgUploaderStruct) uploadImageV2() {
 
 	mountPath := "D:/img-uploader-temp"
 	os.RemoveAll(mountPath)
-	os.MkdirAll(filepath.Join(mountPath, "使用传输工具在此新建任意文件夹后，等待刷新和下一步提示"), 0755)
+	err := os.MkdirAll(filepath.Join(mountPath, "使用传输工具在此新建任意文件夹后，等待刷新和下一步提示"), 0755)
+	if err != nil {
+		fmt.Println(color.RedString("Failed to create dir: %v", err))
+		os.Exit(1)
+	}
+
 	util.PrintStep("ImgUploader", fmt.Sprintf("请在文件传输助手中进入临时目录 %s, 并新建任意文件夹", mountPath))
 	for {
 		// if dir list >0 then break
@@ -104,7 +109,15 @@ func (m *ModJobImgUploaderStruct) uploadImageV2() {
 	}
 
 	util.PrintStep("ImgUploader", "请不要切换传输助手路径，远程目录挂载中")
-	os.RemoveAll(mountPath)
+	for {
+		err = os.RemoveAll(mountPath)
+		if err != nil {
+			fmt.Println(color.RedString("Failed to remove dir: %v", err))
+			time.Sleep(200 * time.Millisecond)
+		} else {
+			break
+		}
+	}
 
 	mountPath, mountHandle := func() (string, *util.CmdBuilder) {
 		if util.IsWindows() {

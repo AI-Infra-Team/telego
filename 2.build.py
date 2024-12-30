@@ -118,7 +118,12 @@ CMD ["bash"]
         if f in blacklist:
             continue
         os.system(f"cp -r ../{f} .")
-    #os_system_sure("docker build -t telego_build .")
+    def check_image_exists(image_name):
+        result = subprocess.run(['docker', 'images', '-q', image_name], stdout=subprocess.PIPE)
+        return len(result.stdout.decode('utf-8').strip()) > 0
+    if not check_image_exists("telego_build"):
+        # os_system_sure("docker pull ubuntu:18.04")
+        os_system_sure("docker build -t telego_build .")
     recover_proxy()
     os.chdir("..")
     os.system("rm -rf build")
