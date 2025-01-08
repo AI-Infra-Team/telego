@@ -1,5 +1,5 @@
 
 package util
-var MainNodeIp = "10.127.20.218"
-var MainNodeUser = "teleinfra"
-var ImgRepoAddressWithPrefix = "http://harbor.telecom-ai.com.cn"
+var MainNodeIp = "192.168.31.96"
+var MainNodeUser = "root"
+var ImgRepoAddressWithPrefix = "http://192.168.31.96:5000"

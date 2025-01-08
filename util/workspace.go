@@ -10,7 +10,17 @@ import (
 	"syscall"
 )
 
+var fakeWorkspace *string
+
+func SetFakeWorkspace(dir string) {
+	fakeWorkspace = &dir
+}
+
 func WorkspaceDir() string {
+	if fakeWorkspace != nil {
+		return *fakeWorkspace
+	}
+
 	var dirPath string
 	currentUser, err := user.Current()
 	if err != nil {

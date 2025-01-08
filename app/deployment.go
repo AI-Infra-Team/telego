@@ -5,18 +5,14 @@ import (
 	"io/fs"
 	"os"
 	"path"
-	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
-	"telego/app/config"
 	"telego/util"
+	"telego/util/yamlext"
 
-	"github.com/fatih/color"
-	"github.com/mholt/archiver/v3"
 	"github.com/mitchellh/mapstructure"
 	"github.com/thoas/go-funk"
-	"gopkg.in/yaml.v3"
 )
 
 func StrPtr(s string) *string {
@@ -62,13 +58,14 @@ func (l LocalValueReadFile) LocalValueInterfaceDummy() {}
 
 // DeploymentYaml represents the structure of yml.
 type DeploymentYaml struct {
-	Comment     string                          `yaml:"comment"`
-	LocalValues map[string]interface{}          `yaml:"local_values"`
-	Secrets     []string                        `yaml:"secret,omitempty"`
-	Prepare     []DeploymentPrepareItemYaml     `yaml:"prepare"`
-	Helms       map[string]DeploymentHelm       `yaml:"helms,omitempty"`
-	K8s         map[string]DeploymentK8s        `yaml:"k8s,omitempty"`
-	Bin         map[string]DeploymentBinDetails `yaml:"bin,omitempty"`
+	Comment     string                            `yaml:"comment"`
+	LocalValues map[string]interface{}            `yaml:"local_values"`
+	Secrets     []string                          `yaml:"secret,omitempty"`
+	Prepare     []DeploymentPrepareItemYaml       `yaml:"prepare"`
+	Helms       map[string]DeploymentHelm         `yaml:"helms,omitempty"`
+	K8s         map[string]DeploymentK8s          `yaml:"k8s,omitempty"`
+	Bin         map[string]DeploymentBinDetails   `yaml:"bin,omitempty"`
+	Dist        map[string]DeploymentDistConfYaml `yaml:"dist,omitempty"`
 }
 
 type Deployment struct {
@@ -79,9 +76,10 @@ type Deployment struct {
 	Helms       map[string]DeploymentHelm
 	K8s         map[string]DeploymentK8s
 	Bin         map[string]DeploymentBinDetails
+	Dist        map[string]DeploymentDistConfYaml `yaml:"dist,omitempty"`
 }
 
-func (d *DeploymentYaml) Verify(prjDir string, yml []byte, skipReadFromFile bool) (*Deployment, error) {
+func (d *DeploymentYaml) Verify(prjName string, prjDir string, yml []byte, skipReadFromFile bool) (*Deployment, error) {
 
 	dply := &Deployment{
 		Comment: d.Comment,
@@ -89,12 +87,14 @@ func (d *DeploymentYaml) Verify(prjDir string, yml []byte, skipReadFromFile bool
 		LocalValues: map[string]LocalValue{
 			"MAIN_NODE_IP": LocalValueStr{Value: util.MainNodeIp},
 			"IMG_REPO":     LocalValueStr{Value: util.ImgRepoAddressNoPrefix},
+			"BIN_PRJ":      LocalValueStr{Value: prjName},
 		},
 		Secrets: d.Secrets,
 		Prepare: []DeploymentPrepareItem{},
 		Helms:   d.Helms,
 		K8s:     d.K8s,
 		Bin:     d.Bin,
+		Dist:    d.Dist,
 	}
 	// trans to specific interface
 	for idx, v := range d.LocalValues {
@@ -142,15 +142,14 @@ func (d *DeploymentYaml) Verify(prjDir string, yml []byte, skipReadFromFile bool
 	if !skipReadFromFile {
 		// second iter read files
 		for k, v := range dply.LocalValues {
-			switch v.(type) {
+			switch v := v.(type) {
 			case LocalValueReadFile:
-				v_ := v.(LocalValueReadFile)
-				fileContent, err := os.ReadFile(path.Join(prjDir, v_.ReadFromFile))
+				fileContent, err := os.ReadFile(path.Join(prjDir, v.ReadFromFile))
 				if err != nil {
-					return nil, fmt.Errorf("invalid local_values item: read_from_file %s not found", path.Join(prjDir, v_.ReadFromFile))
+					return nil, fmt.Errorf("invalid local_values item: read_from_file %s not found", path.Join(prjDir, v.ReadFromFile))
 				}
-				v_.ReadFromFile = string(fileContent)
-				dply.LocalValues[k] = v_
+				v.ReadFromFile = string(fileContent)
+				dply.LocalValues[k] = v
 			}
 		}
 
@@ -222,7 +221,7 @@ func (d *DeploymentYaml) Verify(prjDir string, yml []byte, skipReadFromFile bool
 
 	// transform other field
 	for _, item := range d.Prepare {
-		itemTyped, err := item.Verify()
+		itemTyped, err := item.To(util.Empty{})
 		if err != nil {
 			return nil, fmt.Errorf("invalid prepare item: %w", err)
 		}
@@ -247,7 +246,7 @@ func (d *DeploymentYaml) Verify(prjDir string, yml []byte, skipReadFromFile bool
 		})
 	}
 	for _, b := range dply.Bin {
-		replaceWithValue(b.PyInstaller)
+		replaceWithValue(b.PyInstaller0)
 	}
 	for _, s := range dply.Helms {
 		replaceWithValue(s.HelmDir)
@@ -257,6 +256,7 @@ func (d *DeploymentYaml) Verify(prjDir string, yml []byte, skipReadFromFile bool
 		replaceWithValue(s.As)
 		replaceWithValue(s.Image)
 		replaceWithValue(s.URL)
+		replaceWithValue(s.Pyscript)
 		if s.FileMap != nil {
 			replaceWithValue(s.FileMap.Content)
 			replaceWithValue(s.FileMap.Path)
@@ -276,32 +276,28 @@ func (d *DeploymentYaml) Verify(prjDir string, yml []byte, skipReadFromFile bool
 	return dply, nil
 }
 
-// DeploymentBinDetails represents the details for a binary in the bin field.
-type DeploymentBinDetails struct {
-	NoDefaultInstaller bool    `yaml:"no_default_installer,omitempty"`
-	WinInstaller       string  `yaml:"win_installer,omitempty"`
-	Appimage           string  `yaml:"appimage,omitempty"`
-	PyInstaller        *string `yaml:"py_installer,omitempty"`
-}
-
 // DeploymentPrepareItemYaml represents an item in the "prepare" list.
 type DeploymentPrepareItemYaml struct {
-	Image   string             `yaml:"image,omitempty"`
-	URL     string             `yaml:"url,omitempty"`
-	As      string             `yaml:"as,omitempty"`
-	FileMap *DeploymentFileMap `yaml:"filemap,omitempty"` // todo file map verify
-	Trans   []interface{}      `yaml:"trans,omitempty"`
+	Image    string             `yaml:"image,omitempty"`
+	URL      string             `yaml:"url,omitempty"`
+	As       string             `yaml:"as,omitempty"`
+	FileMap  *DeploymentFileMap `yaml:"filemap,omitempty"`
+	Trans    []interface{}      `yaml:"trans,omitempty"`
+	Pyscript string             `yaml:"pyscript,omitempty"`
 }
 
 type DeploymentPrepareItem struct {
-	Image   *string
-	URL     *string
-	As      *string
-	FileMap *DeploymentFileMap
-	Trans   []DeploymentTransform
+	Image    *string
+	URL      *string
+	As       *string
+	Pyscript *string
+	FileMap  *DeploymentFileMap
+	Trans    []DeploymentTransform
 }
 
-func (i *DeploymentPrepareItemYaml) Verify() (*DeploymentPrepareItem, error) {
+var _ util.Conv[util.Empty, *DeploymentPrepareItem] = &DeploymentPrepareItemYaml{}
+
+func (i *DeploymentPrepareItemYaml) To(util.Empty) (*DeploymentPrepareItem, error) {
 	count := 0
 	if i.Image != "" {
 		count++
@@ -312,60 +308,80 @@ func (i *DeploymentPrepareItemYaml) Verify() (*DeploymentPrepareItem, error) {
 	if i.FileMap != nil {
 		count++
 	}
+	if i.Pyscript != "" {
+		count++
+	}
+
 	if count != 1 {
-		return nil, fmt.Errorf("only one of image/url/filemap can be specified")
+		return nil, fmt.Errorf("only one of image/url/filemap/pyscript can be specified")
 	}
 	item := &DeploymentPrepareItem{
-		Image:   StrPtr(i.Image),
-		URL:     StrPtr(i.URL),
-		As:      StrPtr(i.As),
-		FileMap: i.FileMap,
-		Trans:   []DeploymentTransform{},
+		Image:    StrPtr(i.Image),
+		URL:      StrPtr(i.URL),
+		As:       StrPtr(i.As),
+		FileMap:  i.FileMap,
+		Trans:    []DeploymentTransform{},
+		Pyscript: StrPtr(i.Pyscript),
+	}
+	caseStrInterface := func(trans map[string]interface{}) error {
+		transMap := trans
+		target := map[string][]map[string]string{}
+		err := mapstructure.Decode(transMap, &target)
+		copy, exist := target["copy"]
+		if !exist {
+			err = fmt.Errorf("could not find copy in one trans")
+		}
+		for _, oneCopy := range copy {
+			if len(oneCopy) != 1 {
+				err = fmt.Errorf("one copy should be single kv as {src: dest}")
+				break
+			}
+		}
+		if err != nil {
+			err := fmt.Errorf("invalid prepare/trans item: only 'extract' or {'copy':[{'from':'to'}]} is allowed, \n  err: %v, \n  current is %v %v", err, trans, reflect.TypeOf(trans))
+			return err
+		}
+		// i.Trans[idx] = DeploymentTransformCopy{
+		// 	Copy: copy,
+		// }
+		item.Trans = append(item.Trans, DeploymentTransformCopy{
+			Copy: funk.Map(copy, func(v map[string]string) DeploymentTransformCopyOne {
+				firstK := ""
+				firstV := ""
+				for k, v := range v {
+					firstK = k
+					firstV = v
+				}
+				return DeploymentTransformCopyOne{
+					from: &firstK,
+					to:   &firstV,
+				}
+			}).([]DeploymentTransformCopyOne),
+		})
+		return nil
 	}
 	for _, trans := range i.Trans {
-		switch trans.(type) {
+		switch trans := trans.(type) {
 		case string:
-			if trans.(string) == "extract" {
+			if trans == "extract" {
 				item.Trans = append(item.Trans, DeploymentTransformExtract{})
 				continue
 			} else {
 				return nil, fmt.Errorf("invalid prepare/trans item: only 'extract' is allowed")
 			}
 		case map[string]interface{}:
-			transMap := trans.(map[string]interface{})
-			target := map[string][]map[string]string{}
-			err := mapstructure.Decode(transMap, &target)
-			copy, exist := target["copy"]
-			if !exist {
-				err = fmt.Errorf("could not find copy in one trans")
-			}
-			for _, oneCopy := range copy {
-				if len(oneCopy) != 1 {
-					err = fmt.Errorf("one copy should be single kv as {src: dest}")
-					break
-				}
-			}
-			if err != nil {
-				err := fmt.Errorf("invalid prepare/trans item: only 'extract' or {'copy':[{'from':'to'}]} is allowed, \n  err: %v, \n  current is %v %v", err, trans, reflect.TypeOf(trans))
+			if err := caseStrInterface(trans); err != nil {
 				return nil, err
 			}
-			// i.Trans[idx] = DeploymentTransformCopy{
-			// 	Copy: copy,
-			// }
-			item.Trans = append(item.Trans, DeploymentTransformCopy{
-				Copy: funk.Map(copy, func(v map[string]string) DeploymentTransformCopyOne {
-					firstK := ""
-					firstV := ""
-					for k, v := range v {
-						firstK = k
-						firstV = v
-					}
-					return DeploymentTransformCopyOne{
-						from: &firstK,
-						to:   &firstV,
-					}
-				}).([]DeploymentTransformCopyOne),
-			})
+		case map[interface{}]interface{}:
+			var transStrInterface map[string]interface{}
+			err := mapstructure.Decode(trans, &transStrInterface)
+			if err != nil {
+				return nil, fmt.Errorf("invalid prepare/trans item: only 'extract' or {'copy':[{'from':'to'}]} is allowed, \n  err: %v, \n  current is %v %v", err, trans, reflect.TypeOf(trans))
+			}
+			if err := caseStrInterface(transStrInterface); err != nil {
+				return nil, err
+			}
 		default:
 			err := fmt.Errorf("invalid prepare/trans item: only 'extract' or {'copy':[{'from':'to'}]} is allowed, \n  current is %v %v", trans, reflect.TypeOf(trans))
 			return nil, err
@@ -418,13 +434,13 @@ func (dfm *DeploymentFileMap) WriteToFile() error {
 
 	mode, err := strconv.ParseInt(*dfm.Mode, 8, 64)
 	if err != nil {
-		return fmt.Errorf("Error parsing octal string:", err)
+		return fmt.Errorf("Error parsing octal string: %w", err)
 	}
 
 	dir := path.Dir(*dfm.Path)
 	err = os.MkdirAll(dir, 0755)
 	if err != nil {
-		return fmt.Errorf("Error creating directory:", err)
+		return fmt.Errorf("Error creating directory: %w", err)
 	}
 
 	// 创建或打开文件
@@ -455,7 +471,7 @@ type DeploymentK8s struct {
 	Namespace *string `yaml:"namespace"`
 }
 
-func LoadDeploymentYml(subPrjDir string) (*Deployment, error) {
+func LoadDeploymentYml(prjName string, subPrjDir string) (*Deployment, error) {
 	ymlFile := path.Join(subPrjDir, "deployment.yml")
 	if path.Base(ymlFile) != "deployment.yml" {
 		util.Logger.Fatal("yml not found")
@@ -471,297 +487,43 @@ func LoadDeploymentYml(subPrjDir string) (*Deployment, error) {
 		return nil, fmt.Errorf("failed to read YAML file: %w", err)
 	}
 
-	return LoadDeploymentYmlByContent(subPrjDir, data)
+	return LoadDeploymentYmlByContent(prjName, subPrjDir, data)
 }
 
-func LoadDeploymentYmlByContent(projectDir string, data []byte) (*Deployment, error) {
+func LoadDeploymentYmlByContent(prjName string, projectDir string, data []byte) (*Deployment, error) {
 	var deployment_ DeploymentYaml
 
-	err := yaml.Unmarshal(data, &deployment_)
+	// fmt.Printf("load deployment yml str: %s", string(data))
+
+	err := yamlext.UnmarshalAndValidate(data, &deployment_)
 	if err != nil {
 		return nil, fmt.Errorf("failed to unmarshal YAML file at projectDir , %w", err)
 	}
+
+	// fmt.Printf("load deployment yml obj: %+v", deployment_)
 
 	skipReadFile := false
 	if projectDir == "" {
 		skipReadFile = true
 	}
-	d, err := deployment_.Verify(projectDir, data, skipReadFile)
+	d, err := deployment_.Verify(prjName, projectDir, data, skipReadFile)
 	if err != nil {
 		return nil, fmt.Errorf("invalid yml format: %w", err)
 	}
 	return d, nil
 }
 
-func DeploymentPrepare(project string, deployment *Deployment) error {
-	curDir0 := util.CurDir()
-	defer os.Chdir(curDir0)
-
-	// projectDir := path.Join(LoadConfig().ProjectDir, project)
-	os.Chdir(config.Load().ProjectDir)
-
-	fmt.Println("deploymentPrepare", project)
-	// os.MkdirAll("prepare", 0755)
-
-	// // Step1: Load deployment
-	// deployment, err := LoadDeploymentYml(project)
-	// if err != nil {
-	// 	return err
-	// }
-
-	os.Chdir(project)
-
-	// Step2: Process prepare items
-	// fmt.Printf("yml mapped as %v", deployment)
-	// os.Chdir("prepare")
-	for _, item := range deployment.Prepare {
-		fmt.Println()
-		if *item.Image != "" {
-			// prepare image
-			fmt.Printf("Preparing image: %s\n", *item.Image)
-			ModJobImgPrepare.PrepareImages([]string{*item.Image})
-
-		} else if *item.URL != "" {
-			fmt.Println(color.BlueString("Downloading file from URL: %s", *item.URL))
-			// download to download_cache
-			downloadCachePath := path.Join("download_cache", filepath.Base(*item.URL))
-			_, err := os.Stat(downloadCachePath)
-			if err != nil {
-				err := util.DownloadFile(*item.URL, downloadCachePath)
-				if err != nil {
-					fmt.Println(color.RedString("Failed to download file from %s\n   err: %v", *item.URL, err))
-					// return fmt.Errorf("failed to download file from %s: %w", item.URL, err)
-				}
-			}
-
-			_, err = os.Stat(downloadCachePath)
-			if err == nil {
-				// Execute "trans" command if provided
-				if len(item.Trans) > 0 {
-					defer os.RemoveAll("extract")
-					for _, step := range item.Trans {
-						switch step.(type) {
-						case DeploymentTransformExtract:
-							os.RemoveAll("extract")
-							fmt.Println(color.BlueString("Extracting file: %s", downloadCachePath))
-							err := os.MkdirAll("extract", 0755)
-							if err != nil {
-								return fmt.Errorf("failed to create directory: %w", err)
-							}
-							err = archiver.Unarchive(downloadCachePath, "extract")
-							if err != nil {
-								return fmt.Errorf("failed to extract file: %w", err)
-							}
-						case DeploymentTransformCopy:
-							for _, copyStep := range step.(DeploymentTransformCopy).Copy {
-								src := path.Join("extract", *copyStep.from)
-								dest := *copyStep.to
-
-								fmt.Println(color.BlueString("Copying %s to %s", src, dest))
-								newSrc := path.Join(path.Dir(src), path.Base(dest))
-								err := os.Rename(src, newSrc)
-								if err != nil {
-									return fmt.Errorf("failed to rename %s to %s: %w", src, dest, err)
-								}
-
-								util.ModRunCmd.CopyDirContentOrFileTo(newSrc, path.Dir(dest))
-							}
-						}
-
-					}
-
-					// fmt.Println(color.BlueString("Executing user defined transformation: %s at %s\n", item.Trans, CurDir()))
-					// err := ModRunCmd.RunCommandShowProgress(item.Trans)
-					// if err != nil {
-					// 	return fmt.Errorf("failed to execute transformation %s: %w", item.Trans, err)
-					// }
-				} else if *item.As != "" {
-					util.ModRunCmd.CopyDirContentOrFileTo(downloadCachePath, path.Dir(*item.As))
-					src := path.Join(path.Dir(*item.As), path.Base(downloadCachePath))
-					dest := *item.As
-					err := os.Rename(src, dest)
-					if err != nil {
-						return fmt.Errorf("failed to rename %s to %s: %w", src, dest, err)
-					}
-				}
-			}
-		} else if item.FileMap != nil {
-			err := item.FileMap.WriteToFile()
-			if err != nil {
-				fmt.Println(color.RedString("filemap write failed %v", err))
-			}
+func DeploymentOpePretreatment(project string, deployment *Deployment) error {
+	if strings.HasPrefix(project, "dist_") {
+		if deployment.Prepare == nil {
+			deployment.Prepare = []DeploymentPrepareItem{}
 		}
-
-		// if item.FileMap != nil {
-		// 	fmt.Printf("Creating file from map: %s\n", item.FileMap.Path)
-		// 	err := createFileFromMap(item.FileMap)
-		// 	if err != nil {
-		// 		return fmt.Errorf("failed to create file %s: %w", item.FileMap.Path, err)
-		// 	}
-		// }
+		// add prepare: image: alpine:3.14
+		deployment.Prepare = append(deployment.Prepare, DeploymentPrepareItem{
+			Image: StrPtr("python:3.12.5"),
+		}, DeploymentPrepareItem{
+			Image: StrPtr("alpine/openssh:9.1"),
+		})
 	}
-
-	return nil
-}
-
-func DeploymentUpload(project string, deploymentConf *Deployment) error {
-	if deploymentConf == nil {
-		util.Logger.Warnf("deploymentConf is nil")
-		return fmt.Errorf("deploymentConf is nil")
-	}
-	curDir0 := util.CurDir()
-	defer os.Chdir(curDir0)
-
-	// cd into projectDir
-	projectDir := path.Join(config.Load().ProjectDir, project)
-	fmt.Println(color.BlueString("Uploading project %s contents in %s", project, projectDir))
-	os.Chdir(projectDir)
-
-	// teledeploy mapped to /teledeploy on main node, which is a public file server on port 8003
-	util.PrintStep("DeploymentUpload", "uploading public content (teledeploy) to main_node.fileserver")
-	_, err := os.Stat("teledeploy")
-	if err != nil {
-		fmt.Println(color.YellowString("teledeploy is not exist, \n  please make sure if there are things to upload to public fileserver and prepare is executed"))
-	} else {
-		util.UploadToMainNode("teledeploy", path.Join("/teledeploy", project))
-	}
-
-	// teledeploy_secret mapped to /teledeploy_secret on main node, which is a private position, only can be accessed by rclone
-	util.PrintStep("DeploymentUpload", "uploading secret content (teledeploy_secret) to main_node")
-	_, err = os.Stat("teledeploy_secret")
-	if err != nil {
-		fmt.Println(color.YellowString("teledeploy_secret is not exist, \n  please make sure if there are things to upload to secret fileserver and prepare is executed"))
-	} else {
-		util.UploadToMainNode("teledeploy_secret", path.Join("/teledeploy_secret", project))
-	}
-
-	if strings.HasPrefix(project, "bin_") {
-		// upload k8s things
-		// - deployment.yml
-		util.UploadToMainNode("deployment.yml", path.Join("/teledeploy", project))
-
-	} else if strings.HasPrefix(project, "k8s_") {
-		// upload k8s things
-		// - images
-
-		// upload images
-		imageNames := funk.Map(
-			funk.Filter(deploymentConf.Prepare, func(item DeploymentPrepareItem) bool {
-				return item.Image != nil && *item.Image != ""
-			}).([]DeploymentPrepareItem),
-			func(item DeploymentPrepareItem) string {
-				// fetch image name between last / and :
-				splitTail := strings.Split(*item.Image, "/")
-				return strings.ReplaceAll(splitTail[len(splitTail)-1], ":", "_")
-			},
-		).([]string)
-		_, err = util.MainNodeConfReader{}.ReadPubConf(util.PubConfTypeImgUploaderUrl{})
-		if err == nil {
-			util.PrintStep("ImgUploader", "upload images by img uploader")
-			// is img uploader enabled
-			for img := range imageNames {
-				ModJobImgUploader.ImgUploaderLocal(ImgUploaderModeClient{
-					ImagePath: path.Join(config.Load().ProjectDir, "container_image", fmt.Sprintf("image_%s", img))})
-			}
-		} else {
-			util.PrintStep("ImgUploader", "upload images by rclone with admin permission")
-			if len(imageNames) > 0 {
-				for _, imageName := range imageNames {
-					localPath := path.Join(config.Load().ProjectDir, "container_image", fmt.Sprintf("image_%s", imageName))
-					remotePath := fmt.Sprintf("/teledeploy_secret/container_image/image_%s", imageName)
-					fmt.Println(color.BlueString("Uploading img %s to %s", localPath, remotePath))
-					util.UploadToMainNode(localPath, remotePath)
-				}
-				imageNamesWithQuotes := []string{}
-				for _, imageName := range imageNames {
-					imageNamesWithQuotes = append(imageNamesWithQuotes, fmt.Sprintf("\"%s\"", imageName))
-				}
-
-				imgRepoYaml, err := util.MainNodeConfReader{}.ReadSecretConf(util.SecretConfTypeImgRepo{})
-				if err != nil {
-					fmt.Println(color.RedString("ImgUploader get img repo secret failed: %s", err))
-					os.Exit(1)
-				}
-
-				imgRepo := util.ContainerRegistryConf{}
-				err = yaml.Unmarshal([]byte(imgRepoYaml), &imgRepo)
-				if err != nil {
-					fmt.Println(color.RedString("ImgUploader get img repo secret failed: %s", err))
-					os.Exit(1)
-				}
-
-				uploadScript := fmt.Sprintf(`
-import os, subprocess
-
-images=[%s]
-REPO_HOST="%s"
-REPO_NAMESPACE="teleinfra"
-REPO_USER="%s"
-REPOPW=f"%s"
-
-os.chdir("/teledeploy_secret/container_image")
-def run_command(command,allow_fail=False):
-	"""
-	Run a shell command and ensure it completes successfully.
-	"""
-	result = subprocess.run(command, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-	if result.returncode != 0:
-		print(f"Error running command: {command}")
-		print(result.stderr)
-		if not allow_fail:
-			raise Exception(f"Command failed: {command}")
-	else:
-		print(result.stdout)
-		return result.stdout.decode("utf-8")
-
-sudo_prefix=""
-if os.getuid() != 0:
-	sudo_prefix="sudo "
-
-run_command(f"{sudo_prefix}docker login -u {REPO_USER} -p {REPOPW} {REPO_HOST}")
-for image in images:
-	os.chdir(f"image_{image}")
-	list_dir=os.listdir()
-	arm64=[f for f in list_dir if f.find("_arm64_")!=-1]
-	amd64=[f for f in list_dir if f.find("_amd64_")!=-1]
-
-	def upload_arch(arch,arch_tar_pkg):
-		img_name=run_command(f"{sudo_prefix}docker load -i {arch_tar_pkg}").split("Loaded image: ")[-1].strip()
-		img_key_no_prefix=img_name.split("/")[-1]
-		id=run_command(f"{sudo_prefix}docker image list -q {img_name}").strip()
-		run_command(f"{sudo_prefix}docker tag {id} {REPO_HOST}/{REPO_NAMESPACE}/{img_key_no_prefix}_{arch}")
-		run_command(f"{sudo_prefix}docker push {REPO_HOST}/{REPO_NAMESPACE}/{img_key_no_prefix}_{arch} -q")
-		return img_key_no_prefix
-	img_key_no_prefix=""
-	mani_create_arch=""
-	if len(arm64)>0:
-		img_key_no_prefix=upload_arch("arm64",arm64[0])
-		mani_create_arch+=f"{REPO_HOST}/{REPO_NAMESPACE}/{img_key_no_prefix}_amd64 "
-	if len(amd64)>0:
-		img_key_no_prefix=upload_arch("amd64",amd64[0])
-		mani_create_arch+=f"{REPO_HOST}/{REPO_NAMESPACE}/{img_key_no_prefix}_arm64 "
-	run_command(f"{sudo_prefix}docker manifest create {REPO_HOST}/{REPO_NAMESPACE}/{img_key_no_prefix} {mani_create_arch} --insecure", allow_fail=True)
-	if len(arm64)>0:
-		run_command(f"{sudo_prefix}docker manifest annotate {REPO_HOST}/{REPO_NAMESPACE}/{img_key_no_prefix} "
-			f"--arch arm64 {REPO_HOST}/{REPO_NAMESPACE}/{img_key_no_prefix}_arm64")
-	if len(amd64)>0:
-		run_command(f"{sudo_prefix}docker manifest annotate {REPO_HOST}/{REPO_NAMESPACE}/{img_key_no_prefix} "
-			f"--arch amd64 {REPO_HOST}/{REPO_NAMESPACE}/{img_key_no_prefix}_amd64")
-	run_command(f"{sudo_prefix}docker manifest push {REPO_HOST}/{REPO_NAMESPACE}/{img_key_no_prefix} --insecure")
-	os.chdir("..")
-		`, strings.Join(imageNamesWithQuotes, ","), util.ImgRepoAddressNoPrefix, imgRepo.User, imgRepo.Password)
-
-				util.StartRemoteCmds([]string{
-					fmt.Sprintf("%s@%s", util.MainNodeUser, util.MainNodeIp),
-				}, "sudo "+util.EncodeRemoteRunPy(uploadScript), "")
-			}
-		}
-
-	}
-
-	return nil
-}
-
-func deploymentApply(project string) error {
 	return nil
 }

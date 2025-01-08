@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"telego/util/yamlext"
 
-	"gopkg.in/yaml.v2"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -112,8 +112,22 @@ func KubeClusterClient(clusterName string) (*kubernetes.Clientset, error) {
 	return clientset, nil
 }
 
+type KubeNodeName2IpHookType func(cluster string) (map[string]string, error)
+
+var kubeNodeName2IpHook KubeNodeName2IpHookType
+
+func KubeNodeName2IpSetHook(
+	KubeNodeName2IpHook0 KubeNodeName2IpHookType,
+) {
+	kubeNodeName2IpHook = KubeNodeName2IpHook0
+}
+
 // KubeNodeName2Ip 获取集群中所有节点的名称和 IP 地址的映射
 func KubeNodeName2Ip(cluster string) (map[string]string, error) {
+	if kubeNodeName2IpHook != nil {
+		return kubeNodeName2IpHook(cluster)
+	}
+
 	// 获取 Kubernetes 客户端
 	clientset, err := KubeClusterClient(cluster)
 	if err != nil {
@@ -197,7 +211,7 @@ func KubeSecretSshUser(cluster string) (string, error) {
 
 	// Parse the YAML content
 	var config map[string]interface{}
-	err = yaml.Unmarshal([]byte(nodesConfYml), &config)
+	err = yamlext.UnmarshalAndValidate([]byte(nodesConfYml), &config)
 	if err != nil {
 		return "", fmt.Errorf("failed to unmarshal YAML: %w", err)
 	}

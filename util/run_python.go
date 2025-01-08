@@ -71,7 +71,7 @@ func RunPy() {
 			RequireRoot: false,
 		}
 	}
-	logDir := filepath.Join(WorkspaceDir(), "logs", scriptPath, script)
+	logDir := LogDir()
 	err := makeDirAll(logDir)
 	if err != nil {
 		fmt.Printf("tea run cmd failed: %v\n", err)

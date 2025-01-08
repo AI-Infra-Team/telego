@@ -71,6 +71,10 @@ func needUpgrade() (bool, error) {
 		fmt.Printf("get this binary err: %v", err)
 		return false, err
 	}
+	// if env FROM_GO_RUN is true, skip upgrade
+	if os.Getenv("FROM_GO_RUN") == "true" {
+		return false, nil
+	}
 
 	thisChecksum, err := getFileChecksum(thisProcBinary)
 	if err != nil {

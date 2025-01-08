@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"strings"
-	"telego/app/config"
 	"telego/util"
 
 	"github.com/charmbracelet/bubbles/table"
@@ -206,7 +205,7 @@ func (m MenuViewModel) View() string {
 	}
 	connStackStr := strings.Join(connStackStrs, " > ")
 	return inputView + "\n\n" + baseStyle.Render(m.Table.View()) + "\n  " +
-		connStackStr + color.HiBlackString("\n  键入筛选 | ↑ 上 | ↓ 下 | ctrl+c 回退 | ctrl+l 选中/取消选中 | 项目路径 %s", config.Load().ProjectDir) + "\n"
+		connStackStr + color.HiBlackString("\n  键入筛选 | ↑ 上 | ↓ 下 | ctrl+c 回退 | ctrl+l 选中/取消选中 | 项目路径 %s", ConfigLoad().ProjectDir) + "\n"
 	// m.Table.HelpView() + "\n"
 }
 

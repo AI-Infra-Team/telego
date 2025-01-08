@@ -19,6 +19,7 @@ import (
 
 	"telego/util"
 	"telego/util/strext"
+	"telego/util/yamlext"
 
 	"github.com/barweiss/go-tuple"
 	"github.com/fatih/color"
@@ -26,7 +27,6 @@ import (
 	"github.com/mitchellh/mapstructure"
 	"github.com/spf13/cobra"
 	"github.com/thoas/go-funk"
-	"gopkg.in/yaml.v3"
 )
 
 type ImgUploaderJob struct {
@@ -271,6 +271,7 @@ func (m *ModJobImgUploaderStruct) uploadImageV2() {
 }
 
 func (m *ModJobImgUploaderStruct) uploadImage(imagePath string) {
+	util.PrintStep("ImgUploader", fmt.Sprintf("开始上传 %v 目录下的镜像", imagePath))
 	if !filepath.IsAbs(imagePath) {
 		imagePath = filepath.Join(util.GetEntryDir(), imagePath)
 	}
@@ -289,7 +290,9 @@ func (m *ModJobImgUploaderStruct) uploadImage(imagePath string) {
 		os.Exit(1)
 	}
 	img_upload_server = util.UrlJoin(strings.TrimSpace(img_upload_server), "/upload")
+	img_upload_server = util.UrlJoin(strings.TrimSpace(img_upload_server), "/upload")
 
+	util.PrintStep("ImgUploader", fmt.Sprintf("开始上传镜像 %v", files))
 	res, err := util.UploadMultipleFilesInOneConnection(files, img_upload_server)
 	if err != nil {
 		fmt.Println(color.RedString("Failed to upload files: %v", err))
@@ -301,6 +304,8 @@ func (m *ModJobImgUploaderStruct) uploadImage(imagePath string) {
 }
 
 func (m *ModJobImgUploaderStruct) startServer(workdir string) {
+	util.PrintStep("ImgUploader", "starting server... at "+workdir)
+
 	util.PrintStep("ImgUploader", "starting server... at "+workdir)
 
 	_, err := os.Stat(workdir)
@@ -384,12 +389,12 @@ func (m *ModJobImgUploaderStruct) NewCmd(
 	}
 }
 
-// in app entry
-func (m *ModJobImgUploaderStruct) ImgUploaderLocal(mode ImgUploaderMode) {
-	// cmds := []string{}
-	cmds := ModJobImgUploader.NewCmd(mode)
-	util.ModRunCmd.ShowProgress(cmds[0], cmds[1:]...).BlockRun()
-}
+// // in app entry
+// func (m *ModJobImgUploaderStruct) ImgUploaderLocal(mode ImgUploaderMode) {
+// 	// cmds := []string{}
+// 	cmds := ModJobImgUploader.NewCmd(mode)
+// 	util.ModRunCmd.ShowProgress(cmds[0], cmds[1:]...).BlockRun()
+// }
 
 type ImgUploadUploadedReq struct {
 	Username    string `json:"user"`
@@ -455,7 +460,7 @@ func imgUploaderUploadHandlerV2(c *gin.Context, workdir string) {
 			return
 		}
 		registryConf := util.ContainerRegistryConf{}
-		err = yaml.Unmarshal([]byte(registryConfYaml), &registryConf)
+		err = yamlext.UnmarshalAndValidate([]byte(registryConfYaml), &registryConf)
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -505,7 +510,7 @@ func imgUploaderUploadHandlerV2(c *gin.Context, workdir string) {
 			registryConf.UploaderStoreAdminPw, user_pw_dir.V1, user_pw_dir.V2, user_pw_dir.V3)
 		if err != nil {
 			// return fmt.Errorf("failed to create temp remote store: %w", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to create temp remote store: %w", err)})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to create temp remote store: %v", err)})
 			return
 		}
 
@@ -529,10 +534,10 @@ type RemoteStoreConfig struct {
 
 func (m *ImgUploaderUploadHandlerV2) findPrevTempUsr(username, password string) (string, error) {
 	res, ok := ModJobImgUploader.remoteStoreUserMap.Load(username + ":" + password)
-	if ok {
-		return res.(string), nil
+	if !ok {
+		return "", errors.New("prev temp user not found")
 	}
-	return "", errors.New("PrevTempUsr not found")
+	return res.(string), nil
 }
 
 // imageDir is absolute path
@@ -556,7 +561,7 @@ func (m *ImgUploaderUploadHandlerV2) checkAndUploadImgs(imageDir string) ([]stri
 	}
 	tarFiles, err := getTarFiles(imageDir)
 	if err != nil {
-		return nil, fmt.Errorf("get tar files failed", err)
+		return nil, fmt.Errorf("get tar files failed %w", err)
 	}
 
 	// 镜像信息结构体
@@ -706,7 +711,7 @@ func (m *ImgUploaderUploadHandlerV2) checkAndUploadImgs(imageDir string) ([]stri
 			return nil, fmt.Errorf("Error reading image repo config: %v", err)
 		}
 		registryConf := util.ContainerRegistryConf{}
-		err = yaml.Unmarshal([]byte(registryConfYaml), &registryConf)
+		err = yamlext.UnmarshalAndValidate([]byte(registryConfYaml), &registryConf)
 		if err != nil {
 			return nil, fmt.Errorf("Error unmarshaling image repo config: %v", err)
 		}
@@ -914,7 +919,6 @@ type ImgUploaderUploadHandlerV2 struct{}
 
 func (m *ImgUploaderUploadHandlerV2) record(user, pw, dir string) {
 	ModJobImgUploader.remoteStoreUserMap.Store(user+":"+pw, dir)
-
 }
 
 func ImgUploaderUploadHandlerV1(c *gin.Context) {

@@ -117,7 +117,7 @@ func (k BinManagerRclone) SpecInstallFunc() func() error {
 			// windows
 			err := util.DownloadFile("https://github.com/rclone/rclone/releases/download/v1.68.1/rclone-v1.68.1-windows-amd64.zip", "rclone.zip")
 			if err != nil {
-				ModJobInstall.InstallLocalByJob(InstallJob{Bin: "rclone", BinPack: "bin_rclone"})
+				ModJobInstall.InstallLocalByJob(InstallJob{Bin: "rclone", BinPrj: "bin_rclone"})
 				return nil
 				// ModRunCmd.RequireRootRunCmd(
 				// 	pyCmdHead(), "-c",

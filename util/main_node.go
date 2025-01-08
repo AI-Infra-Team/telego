@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"telego/util/yamlext"
 
 	"github.com/fatih/color"
 )
@@ -64,9 +65,46 @@ func UploadToMainNode(localPath string, remotePath string) {
 	RcloneSyncDirOrFileToDir(localPath, fmt.Sprintf("%s:%s", MainNodeRcloneName, remotePath))
 }
 
-type MainNodeConfReader struct{}
-
 var MainNodeFileServerURL = fmt.Sprintf("http://%s:8003", MainNodeIp)
+
+type MainNodeConfWriter struct{}
+
+func (r MainNodeConfWriter) writeConf(path0 string, remotedir string, content string) error {
+	// create temp dir
+	tempdir, err := os.MkdirTemp("", "mainnode-conf-*")
+	if err != nil {
+		return fmt.Errorf("failed to create temp dir: %v", err)
+	}
+	// create temp file
+	tempfile, err := os.Create(path.Join(tempdir, path0))
+	if err != nil {
+		return fmt.Errorf("failed to create temp file: %v", err)
+	}
+	// write content to temp file
+	if _, err := tempfile.WriteString(content); err != nil {
+		return fmt.Errorf("failed to write to temp file: %v", err)
+	}
+	// set file permission to user read-only
+	if err := os.Chmod(tempfile.Name(), 0400); err != nil {
+		return fmt.Errorf("failed to set temp file permissions: %v", err)
+	}
+	// copy temp file to remote
+	err = RcloneSyncDirOrFileToDir(tempfile.Name(), fmt.Sprintf("%s:%s", MainNodeRcloneName, remotedir))
+	if err != nil {
+		return fmt.Errorf("failed to copy temp file to remote: %v", err)
+	}
+	// return error if any
+	return nil
+}
+
+func (r MainNodeConfWriter) WriteSecretConf(path0 SecretConfType, content string) error {
+	return r.writeConf(path0.SecretConfPath(), "/teledeploy_secret/config", content)
+}
+func (r MainNodeConfWriter) WritePubConf(path0 PubConfType, content string) error {
+	return r.writeConf(path0.PubConfPath(), "/teledeploy/config", content)
+}
+
+type MainNodeConfReader struct{}
 
 func UrlJoin(path ...string) string {
 	res := ""
@@ -126,11 +164,16 @@ func NewSecretConfType(t string) SecretConfType {
 		return SecretConfTypeAdminKubeconfig{}
 	case SecretConfTypeImgRepo{}.SecretConfPath():
 		return SecretConfTypeImgRepo{}
+	case SecretConfTypeSshPrivate{}.SecretConfPath():
+		return SecretConfTypeSshPrivate{}
+	case SecretConfTypeSshPublic{}.SecretConfPath():
+		return SecretConfTypeSshPublic{}
 	default:
 		return nil
 	}
 }
 
+// admin_kubeconfig
 type SecretConfTypeAdminKubeconfig struct{}
 
 var _ SecretConfType = SecretConfTypeAdminKubeconfig{}
@@ -143,6 +186,7 @@ func (r SecretConfTypeAdminKubeconfig) Template() string {
 	return "# Just the kubeconfig content"
 }
 
+// img_repo
 type SecretConfTypeImgRepo struct{}
 
 var _ SecretConfType = SecretConfTypeImgRepo{}
@@ -152,13 +196,39 @@ func (r SecretConfTypeImgRepo) SecretConfPath() string {
 }
 
 func (r SecretConfTypeImgRepo) Template() string {
-	template := GenerateYAMLTemplate(ContainerRegistryConf{
+	template := yamlext.GenerateYAMLTemplate(ContainerRegistryConf{
 		User:     "Registry default user for cri(containerd)",
 		Password: "Registry default user's password for cri(containerd)",
 		Tls:      nil, // we don't need tls Node
 	})
 
 	return template
+}
+
+// ssh_private
+type SecretConfTypeSshPrivate struct{}
+
+var _ SecretConfType = SecretConfTypeSshPrivate{}
+
+func (r SecretConfTypeSshPrivate) SecretConfPath() string {
+	return "ssh_private"
+}
+
+func (r SecretConfTypeSshPrivate) Template() string {
+	return "# Just the ssh private key content"
+}
+
+// ssh_public
+type SecretConfTypeSshPublic struct{}
+
+var _ SecretConfType = SecretConfTypeSshPublic{}
+
+func (r SecretConfTypeSshPublic) SecretConfPath() string {
+	return "ssh_public"
+}
+
+func (r SecretConfTypeSshPublic) Template() string {
+	return "# Just the ssh public key content"
 }
 
 type ConfCacheStruct struct {
@@ -222,6 +292,7 @@ func (r MainNodeConfReader) ReadSecretConf(path0 SecretConfType) (string, error)
 	base := "/teledeploy_secret/config"
 	confpath := path.Join(base, path0.SecretConfPath())
 	if confpath != "" {
+		Logger.Debugf("reading secret conf " + path0.SecretConfPath())
 		res, err := ReadStrFromMainNode(confpath)
 		if err != nil {
 			return "", fmt.Errorf("read secret conf %s failed: %v, template: %s", confpath, err, path0.Template())

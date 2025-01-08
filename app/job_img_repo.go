@@ -5,6 +5,7 @@ import (
 	"os"
 	"strings"
 	"telego/util"
+	"telego/util/yamlext"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
@@ -54,7 +55,7 @@ func (m ModJobImgRepoStruct) startImgRepo() error {
 	}
 
 	config := util.ContainerRegistryConf{}
-	err = yaml.Unmarshal([]byte(confYaml), &config)
+	err = yamlext.UnmarshalAndValidate([]byte(confYaml), &config)
 	if err != nil {
 		return err
 	}
@@ -96,7 +97,10 @@ func (m ModJobImgRepoStruct) startImgRepo() error {
 		}
 		// yaml parse as map
 		yamlConfig := make(map[string]interface{})
-		yaml.Unmarshal(templateContent, &yamlConfig)
+		err = yamlext.UnmarshalAndValidate(templateContent, &yamlConfig)
+		if err != nil {
+			return "", err
+		}
 		yamlConfig["hostname"] = util.ImgRepoAddressNoPrefix
 		yamlConfig["harbor_admin_password"] = config.Password
 

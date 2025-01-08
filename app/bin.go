@@ -1,5 +1,10 @@
 package app
 
+import (
+	"path"
+	"telego/util"
+)
+
 type BinManager interface {
 	CheckInstalled() bool
 	// without bin_ prefix
@@ -25,4 +30,8 @@ func (w BinMangerWrapper) MakeSureWith() error {
 		return ModJobInstall.InstallLocal("bin_" + w.b.BinName())
 	}
 	return nil
+}
+
+func BinInstallDir(project string) string {
+	return path.Join(util.WorkspaceDir(), project, "install")
 }

@@ -3,7 +3,6 @@ package app
 import (
 	"os"
 	"strings"
-	"telego/app/config"
 	"telego/util"
 )
 
@@ -11,7 +10,7 @@ func (i *MenuItem) LoadSubPrjs() {
 	if i.Name == "deploy" { // this is mapped to project dir
 
 		// i.Children = []*MenuItem{}
-		listPrjDir, err := os.ReadDir(config.Load().ProjectDir)
+		listPrjDir, err := os.ReadDir(ConfigLoad().ProjectDir)
 		if err == nil {
 			for _, entry := range listPrjDir {
 				if entry.IsDir() {
@@ -30,6 +29,12 @@ func (i *MenuItem) LoadSubPrjs() {
 								Comment:  "部署项目",
 								Children: []*MenuItem{},
 							}
+						} else if strings.HasPrefix(entry.Name(), "dist_") {
+							mi = &MenuItem{
+								Name:     entry.Name(),
+								Comment:  "分布式部署",
+								Children: []*MenuItem{},
+							}
 						} else {
 							// mi = &MenuItem{
 							// 	Name:     entry.Name(),
@@ -38,7 +43,10 @@ func (i *MenuItem) LoadSubPrjs() {
 							// }
 						}
 
-						if strings.HasPrefix(entry.Name(), "bin_") || strings.HasPrefix(entry.Name(), "k8s_") {
+						if strings.HasPrefix(entry.Name(), "bin_") ||
+							strings.HasPrefix(entry.Name(), "k8s_") ||
+							strings.HasPrefix(entry.Name(), "dist_") {
+
 							if util.HasNetwork() {
 								mi.Children = append(mi.Children, &MenuItem{
 									Name:     "prepare",

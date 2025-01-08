@@ -22,6 +22,8 @@ func (i *MenuItem) EnterItemOpePrepare(prefixNodes []*MenuItem) DispatchExecRes 
 			err := DeploymentPrepare(parentNode.Name, parentNode.Deployment)
 			if err != nil {
 				fmt.Println(color.RedString("prepare '%s' failed, err: %v", parentNode.Name, err.Error()))
+			} else {
+				fmt.Println(color.GreenString("prepare '%s' success", parentNode.Name))
 			}
 		},
 	}
@@ -60,7 +62,7 @@ func (i *MenuItem) EnterItemOpeApply(prefixNodes []*MenuItem) DispatchEnterNextR
 		return i.EnterItemBinInstall(prefixNodes)
 	}
 
-	if strings.HasPrefix(parentNode.Name, "k8s_") {
+	if strings.HasPrefix(parentNode.Name, "k8s_") || strings.HasPrefix(parentNode.Name, "dist_") {
 		clusters := util.KubeList()
 		if len(clusters) == 0 {
 			i.Children = []*MenuItem{(&MenuItem{

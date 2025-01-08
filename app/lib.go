@@ -3,30 +3,50 @@ package app
 import (
 	"fmt"
 	"os"
-	"path"
 	"strings"
 	"sync"
-	"time"
 
-	"telego/app/config"
 	"telego/util"
+	"telego/util/yamlext"
 
 	"github.com/charmbracelet/bubbles/table"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/fatih/color"
-	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v2"
 )
 
 // 菜单节点定义
+type MenuItemYaml struct {
+	Name     string          `yaml:"name"`
+	Comment  string          `yaml:"comment,omitempty"`
+	Children []*MenuItemYaml `yaml:"children,omitempty"`
+}
+
 type MenuItem struct {
-	Name       string      `yaml:"name"`
-	Comment    string      `yaml:"comment,omitempty"`
-	Children   []*MenuItem `yaml:"children,omitempty"`
-	SpecTags   []string    `yaml:"spectags,omitempty"`
-	Deployment *Deployment `json:"deployment,omitempty"`
+	Name       string
+	Comment    string
+	Children   []*MenuItem
+	SpecTags   []string
+	Deployment *Deployment
+}
+
+var _ util.Conv[util.Empty, *MenuItem] = &MenuItemYaml{}
+
+func (m *MenuItemYaml) To(arg util.Empty) (*MenuItem, error) {
+	children := make([]*MenuItem, 0)
+	for _, child := range m.Children {
+		childItem, err := child.To(arg)
+		if err != nil {
+			return nil, err
+		}
+		children = append(children, childItem)
+	}
+	return &MenuItem{
+		Name:     m.Name,
+		Comment:  m.Comment,
+		Children: children,
+	}, nil
 }
 
 // skip the root node self
@@ -90,10 +110,16 @@ var initMenuTreeWg sync.WaitGroup
 // 初始化菜单树ji
 func InitMenuTree(loadSubPrjs bool) *MenuItem {
 	// 解析 YAML 数据
-	var menu MenuItem
-	err := yaml.Unmarshal([]byte(MenuTreeData), &menu)
+	var menuYaml MenuItemYaml
+	err := yamlext.UnmarshalAndValidate([]byte(MenuTreeData), &menuYaml)
 	if err != nil {
-		fmt.Println("Error decoding YAML:", err)
+		fmt.Println("Error decoding MenuItem:", err)
+		// 退出程序 ,直接panic
+		os.Exit(1)
+	}
+	menu, err := menuYaml.To(util.Empty{})
+	if err != nil {
+		fmt.Println("Error decoding MenuItem:", err)
 		// 退出程序 ,直接panic
 		os.Exit(1)
 	}
@@ -136,7 +162,7 @@ func InitMenuTree(loadSubPrjs bool) *MenuItem {
 		util.Logger.Debug("one deploy-templete: " + c.Name)
 	}
 
-	return &menu
+	return menu
 }
 
 func Main() {
@@ -144,20 +170,16 @@ func Main() {
 	workdir := util.WorkspaceDir()
 
 	// 设置日志级别
-	util.Logger.SetLevel(logrus.DebugLevel)
-	// time stamp
-	curtime := time.Now().Format("2006-01-02-15h04m05s")
-	file, err := os.OpenFile(path.Join(workdir, fmt.Sprintf("%s.log", curtime)), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
-	if err != nil {
-		fmt.Printf("Error opening log file: %v\n", err)
-		return
+	logfile := util.SetupFileLog()
+	if logfile == nil {
+		util.Logger.Error("Error setup log file")
+		os.Exit(1)
 	}
-	defer file.Close()
-	util.Logger.SetOutput(file)
+	defer logfile.Close()
 
 	util.SaveEntryDir()
 
-	_, err = os.Getwd()
+	_, err := os.Getwd()
 	if err != nil {
 		// fmt.Println("Error:", err)
 		util.Logger.Error("Error:", err)
@@ -186,23 +208,6 @@ func Main() {
 		},
 	}
 
-	jobmods := []JobModInterface{
-		ModJobInstall,
-		ModJobApply,
-		ModJobCmd,
-		ModJobSsh,
-		ModJobStartFileserver,
-		ModJobDistributeDeploy,
-		ModJobImgRepo,
-		ModJobImgUploader,
-		ModJobImgPrepare,
-		ModJobCreateNewUser,
-		ModJobFetchAdminKubeconfig,
-		ModJobConfigExporter,
-		ModJobRclone,
-		// ModJobSshFs,
-		ModJobInfraExporterSingle,
-	}
 	for _, mod := range jobmods {
 		fmt.Println("parsing", mod.JobCmdName())
 		rootCmd.AddCommand(mod.ParseJob(&cobra.Command{
@@ -223,7 +228,7 @@ func Main() {
 		}
 	}
 
-	config.Load()
+	ConfigLoad()
 
 	// Define table columns
 	columns := []table.Column{

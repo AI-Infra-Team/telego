@@ -3,3 +3,4 @@ Dockerfile
 .cache
 build
 compile_conf.yml
+.test_tmp

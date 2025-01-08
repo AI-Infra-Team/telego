@@ -11,11 +11,11 @@ import (
 	"strings"
 	"telego/util"
 	clusterconf "telego/util/cluster_conf"
+	"telego/util/yamlext"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/thoas/go-funk"
-	"gopkg.in/yaml.v2"
 	"k8s.io/client-go/util/homedir"
 )
 
@@ -189,53 +189,56 @@ func (m ModJobSshStruct) genOrGetKey() {
 	}
 
 	// check remote exist public and private key with rclone at remote:/teledeploy_secret/ssh_config/
-	remoteEd25519Exists := false
+	type RemoteSshKey struct {
+		Pubkey  string
+		Privkey string
+	}
+	var remoteSshKey *RemoteSshKey
 	{
-		cmds := util.ModRunCmd.SplitCmdline("rclone ls remote:/teledeploy_secret/ssh_config/")
-		output, err := util.ModRunCmd.NewBuilder(cmds[0], cmds[1:]...).BlockRun()
-		if err != nil {
-			if !strings.Contains(fmt.Sprintf("%s", err), "directory not found") {
-				fail = true
-				failInfo = fmt.Sprintf("unknown rclone ls error: %v, output: %s", err, output)
-				return
-			} else {
-				fmt.Println("remote ssh key not found1")
-			}
-		} else {
-			// check both pub key and pri key exist
-			// Check if both public and private key files exist in the output string
-			pubKeyExists := strings.Contains(output, "id_ed25519.pub")
-			priKeyExists := strings.Contains(output, "id_ed25519")
+		// cmds := util.ModRunCmd.SplitCmdline("rclone ls remote:/teledeploy_secret/ssh_config/")
+		// output, err := util.ModRunCmd.NewBuilder(cmds[0], cmds[1:]...).BlockRun()
+		pri, err1 := util.MainNodeConfReader{}.ReadSecretConf(util.SecretConfTypeSshPrivate{})
+		pub, err2 := util.MainNodeConfReader{}.ReadSecretConf(util.SecretConfTypeSshPublic{})
 
-			// Both keys need to exist for remoteEd25519Exists to be true
-			if pubKeyExists && priKeyExists {
-				remoteEd25519Exists = true
-			} else {
-				fmt.Println(color.RedString("remote ssh key not found2, output: %s", output))
+		if err1 != nil || err2 != nil {
+			fmt.Println(color.YellowString("read ssh key failed: %v, %v", err1, err2))
+		} else {
+			remoteSshKey = &RemoteSshKey{
+				Pubkey:  pub,
+				Privkey: pri,
 			}
 		}
 	}
 
-	if remoteEd25519Exists {
+	if remoteSshKey != nil {
 		// fetch by rclone
 		// one is pub key
-		// one is pri key
-		fmt.Println(color.BlueString("fetching keys from remote node"))
-		cmdPub := util.ModRunCmd.SplitCmdline("rclone copy remote:/teledeploy_secret/ssh_config/id_ed25519.pub " + filepath.Join(homeDir, ".ssh"))
-		if _, err := util.ModRunCmd.NewBuilder(cmdPub[0], cmdPub[1:]...).BlockRun(); err != nil {
+		util.PrintStep("ssh genOrGetKey", color.BlueString("fetching keys from remote node"))
+		pubfile, err := os.Create(ed25519PubFilePath)
+		if err != nil {
 			fail = true
-			failInfo = fmt.Sprintf("failed to fetch ed25519 public key: %v", err)
+			failInfo = fmt.Sprintf("failed to create pubfile: %v", err)
 			return
 		}
-		cmdPri := util.ModRunCmd.SplitCmdline("rclone copy remote:/teledeploy_secret/ssh_config/id_ed25519 " + filepath.Join(homeDir, ".ssh"))
-		if _, err := util.ModRunCmd.NewBuilder(cmdPri[0], cmdPri[1:]...).BlockRun(); err != nil {
+		pubfile.WriteString(remoteSshKey.Pubkey)
+		pubfile.Close()
+
+		prifile, err := os.Create(ed25519FilePath)
+		if err != nil {
 			fail = true
-			failInfo = fmt.Sprintf("failed to fetch ed25519 private key: %v", err)
+			failInfo = fmt.Sprintf("failed to create prifile: %v", err)
 			return
 		}
-		// update permission to 600
+		prifile.WriteString(remoteSshKey.Privkey)
+		prifile.Close()
+
 		cmdPerm := util.ModRunCmd.SplitCmdline("chmod 600 " + filepath.Join(homeDir, ".ssh", "id_ed25519"))
-		util.ModRunCmd.RequireRootRunCmd(cmdPerm[0], cmdPerm[1:]...)
+		_, err = util.ModRunCmd.NewBuilder(cmdPerm[0], cmdPerm[1:]...).WithRoot().BlockRun()
+		if err != nil {
+			fail = true
+			failInfo = fmt.Sprintf("failed to set permission: %v", err)
+			return
+		}
 	} else {
 		if localEd25519Exists {
 			fmt.Println(color.YellowString("Local ssh key exists, skip generate or fetch"))
@@ -260,8 +263,26 @@ func (m ModJobSshStruct) genOrGetKey() {
 		// upload to remote
 		fmt.Println(color.BlueString("uploading ssh keys to remote..."))
 		// cmds = strings.Split("rclone copy ~/.ssh/id_ed25519* remote:/teledeploy_secret/ssh_config/", " ")
-		util.UploadToMainNode(ed25519FilePath, "/teledeploy_secret/ssh_config/")
-		util.UploadToMainNode(ed25519PubFilePath, "/teledeploy_secret/ssh_config/")
+		// util.UploadToMainNode(ed25519FilePath, "/teledeploy_secret/ssh_config/")
+		// util.UploadToMainNode(ed25519PubFilePath, "/teledeploy_secret/ssh_config/")
+		localpri, err := os.ReadFile(ed25519FilePath)
+		if err != nil {
+			fail = true
+			failInfo = fmt.Sprintf("failed to read local pri key: %v", err)
+			return
+		}
+		util.MainNodeConfWriter{}.WriteSecretConf(util.SecretConfTypeSshPrivate{}, string(localpri))
+
+		localpub, err := os.ReadFile(ed25519PubFilePath)
+		if err != nil {
+			fail = true
+			failInfo = fmt.Sprintf("failed to read local pub key: %v", err)
+			return
+		}
+
+		util.MainNodeConfWriter{}.WriteSecretConf(util.SecretConfTypeSshPublic{}, string(localpub))
+
+		util.MainNodeConfWriter{}.WriteSecretConf(util.SecretConfTypeSshPrivate{}, string(localpri))
 	}
 }
 
@@ -284,7 +305,7 @@ func (m ModJobSshStruct) updateKeyToCluster() {
 
 	// 解析 YAML
 	var clusterConf clusterconf.ClusterConfYmlModel
-	err = yaml.Unmarshal(data, &clusterConf)
+	err = yamlext.UnmarshalAndValidate(data, &clusterConf)
 	if err != nil {
 		fmt.Println(color.RedString("解析 YAML 文件失败: %v", err))
 		os.Exit(1)

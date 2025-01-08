@@ -2,13 +2,13 @@ package config
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
-	"telego/util"
+
+	"telego/util/yamlext"
 
 	"github.com/fatih/color"
 	"gopkg.in/yaml.v3"
@@ -21,6 +21,13 @@ type Config struct {
 
 var config *Config
 
+func SetFake(prjdir string) {
+	fmt.Println(color.GreenString("SetFake %s", prjdir))
+	config = &Config{
+		ProjectDir: prjdir,
+	}
+}
+
 func LoadFake() Config {
 	return Config{
 		ProjectDir: path.Join(homedir.HomeDir(), "fake_prj_dir"),
@@ -28,11 +35,12 @@ func LoadFake() Config {
 }
 
 // Load loads configuration from a YAML file located at {workspace}/config.yaml
-func Load() Config {
+func Load(
+	workspace string,
+	StartTemporaryInputUI func(head string, placeholder string, tail string) (bool, string)) Config {
 	if config != nil {
 		return *config
 	}
-	workspace := util.WorkspaceDir()
 
 	// Construct the path to the config.yaml file
 	configPath := filepath.Join(workspace, "config.yaml")
@@ -41,7 +49,7 @@ func Load() Config {
 	if _, err := os.Stat(configPath); os.IsNotExist(err) {
 		// If file doesn't exist, start Bubble Tea UI to get the project directory
 		fmt.Println("Config file not found. Launching interactive mode.")
-		set, projectDir := util.StartTemporaryInputUI(
+		set, projectDir := StartTemporaryInputUI(
 			color.GreenString("为了进行自定义yml的管控，需要配置项目路径:"),
 			"Enter your project directory",
 			"(云桌面输入挂载项目目录, 本机输入git项目目录)\n\n(回车确认，ctrl+c取消)",
@@ -71,14 +79,14 @@ func Load() Config {
 	}
 
 	// Open and read the config.yaml file
-	data, err := ioutil.ReadFile(configPath)
+	data, err := os.ReadFile(configPath)
 	if err != nil {
 		log.Fatalf("failed to read config file: %v", err)
 	}
 
 	// Parse the YAML file into the Config struct
 	var cfg Config
-	err = yaml.Unmarshal(data, &cfg)
+	err = yamlext.UnmarshalAndValidate(data, &cfg)
 	if err != nil {
 		log.Fatalf("failed to parse YAML config: %v", err)
 	}
@@ -93,7 +101,7 @@ func SaveConfig(path string, cfg Config) {
 		log.Fatalf("failed to marshal config to YAML: %v", err)
 	}
 
-	err = ioutil.WriteFile(path, data, 0644)
+	err = os.WriteFile(path, data, 0644)
 	if err != nil {
 		log.Fatalf("failed to write config file: %v", err)
 	}

@@ -3,21 +3,22 @@ package app
 import (
 	"path"
 	"strings"
-	"telego/app/config"
 	"telego/util"
 )
 
 func (selected *MenuItem) IsDeploySubPrj(selectedParent string) bool {
-	return selectedParent == "deploy" && (strings.HasPrefix(selected.Name, "bin_") || strings.HasPrefix(selected.Name, "k8s_"))
+	return selectedParent == "deploy" && (strings.HasPrefix(selected.Name, "bin_") ||
+		strings.HasPrefix(selected.Name, "k8s_") ||
+		strings.HasPrefix(selected.Name, "dist_"))
 }
 
 func (i *MenuItem) LoadDeploymentYml() {
 	if i.IsDeploySubPrj("deploy") {
 		if i.Deployment == nil {
 			// curDir0 := util.CurDir()
-			// os.Chdir(config.Load().ProjectDir)
+			// os.Chdir(ConfigLoad().ProjectDir)
 			dep, err := LoadDeploymentYml(
-				path.Join(config.Load().ProjectDir, i.Name),
+				i.Name, path.Join(ConfigLoad().ProjectDir, i.Name),
 			)
 			if err != nil {
 				// os.Chdir(curDir0)

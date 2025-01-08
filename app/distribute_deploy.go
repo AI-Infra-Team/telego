@@ -9,11 +9,11 @@ import (
 	"telego/util"
 	clusterconf "telego/util/cluster_conf"
 	"telego/util/prjerr"
+	"telego/util/yamlext"
 
 	"github.com/barweiss/go-tuple"
 	"github.com/fatih/color"
 	"github.com/thoas/go-funk"
-	"gopkg.in/yaml.v2"
 )
 
 // some interfaces:
@@ -74,7 +74,7 @@ func (m ModDistributeDeployStruct) SetupAll(d DistributeDeployer) {
 	// 解析 YAML
 	util.PrintStep("DistributeDeploySetupAll", "reading yaml file...")
 	var clusterConf clusterconf.ClusterConfYmlModel
-	err = yaml.Unmarshal(data, &clusterConf)
+	err = yamlext.UnmarshalAndValidate(data, &clusterConf)
 	if err != nil {
 		fmt.Println(color.RedString("解析 YAML 文件失败: %v", err))
 		os.Exit(1)

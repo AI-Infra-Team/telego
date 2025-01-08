@@ -13,8 +13,8 @@ import (
 )
 
 type InstallJob struct {
-	BinPack string
-	Bin     string // left empty to install all
+	BinPrj string
+	Bin    string // left empty to install all
 	// BinMeta DeploymentBinDetails
 }
 
@@ -29,7 +29,7 @@ func (m ModJobInstallStruct) JobCmdName() string {
 func (_ ModJobInstallStruct) ParseJob(installCmd *cobra.Command) *cobra.Command {
 	job := &InstallJob{}
 	// 绑定命令行标志到结构体字段
-	installCmd.Flags().StringVar(&job.BinPack, "bin-pack", "", "Path to install")
+	installCmd.Flags().StringVar(&job.BinPrj, "bin-prj", "", "Path to install")
 	installCmd.Flags().StringVar(&job.Bin, "bin", "", "Path to binary")
 	// bool job.BinMeta.NoDefaultInstaller
 	// installCmd.Flags().BoolVar(&job.BinMeta.NoDefaultInstaller, "no-default-installer", false, "No default installer")
@@ -37,12 +37,12 @@ func (_ ModJobInstallStruct) ParseJob(installCmd *cobra.Command) *cobra.Command 
 	// installCmd.Flags().StringVar(&job.BinMeta.Appimage, "appimage", "", "Appimage")
 
 	installCmd.Run = func(_ *cobra.Command, _ []string) {
-		fmt.Println(color.BlueString("Install job running %s %s", job.BinPack, job.Bin))
+		fmt.Println(color.BlueString("Install job running %s %s", job.BinPrj, job.Bin))
 		// if job.Bin == "" {
 		// 	fmt.Println(color.RedString("No bin provided"))
 		// 	os.Exit(1)
 		// }
-		if job.BinPack == "" {
+		if job.BinPrj == "" {
 			fmt.Println(color.RedString("No bin provided"))
 			os.Exit(1)
 		}
@@ -66,18 +66,18 @@ func (_ ModJobInstallStruct) ParseJob(installCmd *cobra.Command) *cobra.Command 
 }
 
 func (_ ModJobInstallStruct) getBinDeploymentFromMainNode(job InstallJob) (*Deployment, error) {
-	url := fmt.Sprintf("http://%s:8003/%s/deployment.yml", util.MainNodeIp, job.BinPack)
+	url := fmt.Sprintf("http://%s:8003/%s/deployment.yml", util.MainNodeIp, job.BinPrj)
 	ymlData, err := util.HttpGetUrlContent(url)
 	if err != nil {
 		util.Logger.Warnf("getBinDeploymentFromMainNode Failed to fetch file from %s: %s", url, err)
 		return nil, err
 	}
-	return LoadDeploymentYmlByContent("", ymlData)
+	return LoadDeploymentYmlByContent(job.BinPrj, "", ymlData)
 }
 
 func (_ ModJobInstallStruct) InstallLocalByJob(job InstallJob) {
 	// fetch meta
-	fmt.Println(color.BlueString("Fetching %s meta", job.BinPack))
+	fmt.Println(color.BlueString("Fetching %s meta", job.BinPrj))
 	dplymnt, err := ModJobInstall.getBinDeploymentFromMainNode(job)
 	if err != nil {
 		fmt.Println(color.RedString("Failed to fetch meta: %s", err.Error()))
@@ -107,70 +107,101 @@ func (_ ModJobInstallStruct) InstallLocalByJob(job InstallJob) {
 	}
 
 	// install
-	fmt.Println(color.BlueString("Installing %s / %s", job.BinPack, bins))
+	util.PrintStep("install", fmt.Sprintf("%s / %v", job.BinPrj, bins))
 	os.Chdir(util.WorkspaceDir())
 
 	for binname, bininfo := range bins {
-		installTempDir := path.Join("install_"+job.BinPack, binname)
+		util.PrintStep("install", fmt.Sprintf("one sub bin %s / %s with config %v", job.BinPrj, binname, bininfo))
+		installTempDir := path.Join("install_"+job.BinPrj, binname)
 		os.MkdirAll(installTempDir, 0755)
 		defer os.RemoveAll(installTempDir)
+		defer fmt.Println(color.GreenString("Installed %s / %s", job.BinPrj, binname))
 
-		if !bininfo.NoDefaultInstaller {
-			if util.IsWindows() {
-				err := util.InstallWindowsBin(
-					fmt.Sprintf("http://%s:8003/%s/%s.exe", util.MainNodeIp, job.BinPack, binname),
-					installTempDir,
-					binname,
-				)
-				if err != nil {
-					fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
-					return
+		err := func() error {
+			if !bininfo.NoDefaultInstaller {
+				util.PrintStep("intall", fmt.Sprintf("%s/%s with default installer", job.BinPrj, binname))
+				if util.IsWindows() {
+					err := util.InstallWindowsBin(
+						fmt.Sprintf("http://%s:8003/%s/%s.exe", util.MainNodeIp, job.BinPrj, binname),
+						installTempDir,
+						binname,
+					)
+					if err != nil {
+						// fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
+						return fmt.Errorf("failed to install %s: %s", binname, err.Error())
+					}
+					return nil
 				}
-			} else {
+
 				arch := util.GetCurrentArch()
 				err := util.InstallLinuxBin(
-					fmt.Sprintf("http://%s:8003/%s/%s_%s", util.MainNodeIp, job.BinPack, binname, arch),
+					fmt.Sprintf("http://%s:8003/%s/%s_%s", util.MainNodeIp, job.BinPrj, binname, arch),
 					installTempDir,
 					binname,
 				)
 				if err != nil {
-					fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
-					return
+					// fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
+					return fmt.Errorf("failed to install %s: %v", binname, err)
 				}
+				return nil
 			}
-		} else if util.IsWindows() {
-			if bininfo.WinInstaller != "" {
-				// download win_installer
-				util.DownloadFile(
-					fmt.Sprintf("http://%s:8003/%s/%s", util.MainNodeIp, job.BinPack, bininfo.WinInstaller),
-					path.Join(installTempDir, bininfo.WinInstaller),
-				)
-				// start installer
-				_, err := util.ModRunCmd.ShowProgress(path.Join(installTempDir, bininfo.WinInstaller)).BlockRun()
+
+			if pyinstall, err := bininfo.PyInstaller(job.BinPrj); err == nil {
+				util.PrintStep("intall", fmt.Sprintf("%s/%s with pyscript", job.BinPrj, binname))
+				err := pyinstall.Run()
 				if err != nil {
-					fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
-					return
+					// fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
+					return fmt.Errorf("failed to install with pyscript %s: %v", binname, err)
 				}
-			} else {
-				fmt.Println(color.RedString("At least one of 'non no_default_installer' or 'win_installer' should be provided for windows"))
-				return
+				return nil
 			}
-		} else if bininfo.Appimage != "" {
 
-		} else {
-			fmt.Println(color.RedString("At least one of 'non no_default_installer' or 'appimage' should be provided for linux"))
+			// system binded installer
+			if util.IsWindows() {
+				if bininfo.WinInstaller != "" {
+					// download win_installer
+					util.PrintStep("intall", fmt.Sprintf("%s/%s with win_installer", job.BinPrj, binname))
+					util.DownloadFile(
+						fmt.Sprintf("http://%s:8003/%s/%s", util.MainNodeIp, job.BinPrj, bininfo.WinInstaller),
+						path.Join(installTempDir, bininfo.WinInstaller),
+					)
+					// start installer
+					_, err := util.ModRunCmd.ShowProgress(path.Join(installTempDir, bininfo.WinInstaller)).BlockRun()
+					if err != nil {
+						// fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
+						// return
+						return fmt.Errorf("failed to install %s: %v", binname, err)
+					}
+					return nil
+				} else {
+					// fmt.Println(color.RedString("At least one of 'non no_default_installer' or 'win_installer' should be provided for windows"))
+					return fmt.Errorf("at least one of 'non no_default_installer' or 'win_installer' should be provided for windows")
+				}
+			}
+
+			if bininfo.Appimage != "" {
+				util.PrintStep("intall", fmt.Sprintf("%s/%s with appimage", job.BinPrj, binname))
+				// download appimage
+				// fmt.Println(color.RedString("appimage not supported for now"))
+				return fmt.Errorf("appimage not supported for now")
+			}
+			// fmt.Println(color.RedString("At least one of 'non no_default_installer' or 'appimage' should be provided for linux"))
+			return fmt.Errorf("at least one of 'non no_default_installer' or 'appimage' should be provided for linux")
+		}()
+
+		if err != nil {
+			fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
 			return
+		} else {
+			fmt.Println(color.GreenString("Installed %s / %s", job.BinPrj, binname))
 		}
-
-		fmt.Println(color.GreenString("Installed %s / %s", job.BinPack, binname))
 	}
-
 }
 
 func NewInstallCmd(binPack, bin string) []string {
 	cmds := []string{"telego", "install",
 		"--bin", bin,
-		"--bin-pack", binPack}
+		"--bin-prj", binPack}
 	// "--no-default-installer %v "+
 	// "--win-installer", meta.WinInstaller,
 	// "--appimage", meta.Appimage}

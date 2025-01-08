@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 	"strings"
 	"telego/util"
+	"telego/util/yamlext"
 
 	"github.com/barweiss/go-tuple"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
-	"gopkg.in/yaml.v3"
 )
 
 type ModJobConfigExporterStruct struct{}
@@ -21,20 +21,38 @@ func (ModJobConfigExporterStruct) JobCmdName() string {
 	return "config-exporter"
 }
 
+type EnvExporterDistConfig struct {
+	DistPrjName        string
+	DistNode           string
+	DistInstanceIdx    int
+	DistConfigFilePath string
+}
+
+func (d *EnvExporterDistConfig) IsValid() bool {
+	return d.DistPrjName != "" && d.DistNode != "" && d.DistInstanceIdx >= 0 && d.DistConfigFilePath != ""
+}
+
 func (ModJobConfigExporterStruct) ParseJob(Cmd *cobra.Command) *cobra.Command {
 	secrets := []string{}
 	publics := []string{}
 	saveas := ""
+	distconfig := EnvExporterDistConfig{}
 
 	// 绑定命令行标志到结构体字段
+
 	Cmd.Flags().StringArrayVar(&secrets, "secret", []string{}, "")
 	Cmd.Flags().StringArrayVar(&publics, "public", []string{}, "")
 	Cmd.Flags().StringVar(&saveas, "saveas", "", "导出shell文件在bash中使用source执行，以加载环境变量")
+
+	Cmd.Flags().StringVar(&distconfig.DistPrjName, "dist", "", "分布式项目名称")
+	Cmd.Flags().StringVar(&distconfig.DistNode, "dist-node", "", "分布式项目部署节点名称")
+	Cmd.Flags().IntVar(&distconfig.DistInstanceIdx, "dist-instance-idx", -1, "分布式项目部署实例索引")
+	Cmd.Flags().StringVar(&distconfig.DistConfigFilePath, "dist-config", "", "分布式项目部署配置文件路径")
 	// Cmd.MarkFlagRequired("saveas")
 
 	Cmd.Run = func(_ *cobra.Command, _ []string) {
 
-		ModJobConfigExporter.DoJob(secrets, publics, saveas)
+		ModJobConfigExporter.DoJob(secrets, publics, saveas, distconfig)
 	}
 
 	return Cmd
@@ -56,7 +74,7 @@ func (pipeline *ConfigExporterPipeline) getFinalValue() (string, error) {
 
 	// 将Value解析为map
 	var parsedMap map[string]interface{}
-	err := yaml.Unmarshal([]byte(pipeline.Value), &parsedMap)
+	err := yamlext.UnmarshalAndValidate([]byte(pipeline.Value), &parsedMap)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse value as YAML: %v", err)
 	}
@@ -82,19 +100,24 @@ func (pipeline *ConfigExporterPipeline) getFinalValue() (string, error) {
 
 func (ModJobConfigExporterStruct) DoJob(secrets []string,
 	publics []string,
-	saveas string) {
+	saveas string,
+	distcmd EnvExporterDistConfig) {
+	util.PrintStep("config-exporter", fmt.Sprintln(secrets, publics, saveas, distcmd))
 	if !filepath.IsAbs(saveas) {
 		saveas = filepath.Join(util.GetEntryDir(), saveas)
+	}
+	if distcmd.IsValid() && !filepath.IsAbs(distcmd.DistConfigFilePath) {
+		distcmd.DistConfigFilePath = filepath.Join(util.GetEntryDir(), distcmd.DistConfigFilePath)
 	}
 	_, err := os.Stat(filepath.Dir(saveas))
 	if err != nil {
 		err := os.MkdirAll(filepath.Dir(saveas), 0755)
 		if err != nil {
-			fmt.Println("Error creating directory: %v", err)
+			fmt.Println(color.RedString("Error creating directory: %v", err))
 			return
 		}
 	}
-	if len(publics)+len(secrets) == 0 {
+	if len(publics)+len(secrets) == 0 && !distcmd.IsValid() {
 		fmt.Println(color.YellowString("No public or secret configs specified"))
 		return
 	}
@@ -139,7 +162,7 @@ func (ModJobConfigExporterStruct) DoJob(secrets []string,
 		}
 		return true
 	}() {
-		return
+		os.Exit(1)
 	}
 
 	if !func() bool {
@@ -162,12 +185,14 @@ func (ModJobConfigExporterStruct) DoJob(secrets []string,
 		}
 		return true
 	}() {
-		return
+		os.Exit(1)
 	}
 
 	confKvs := []tuple.T2[string, string]{}
 	if !func() bool {
+		// secret
 		// 遍历每个 pipeline，解析YamlMapGet获取最终的值
+		util.PrintStep("config-exporter", fmt.Sprintln("exporting secrets"))
 		for _, secretConfType := range secretConfTypes {
 			finalValue, err := secretConfType.V1.getFinalValue()
 			if err != nil {
@@ -183,6 +208,8 @@ func (ModJobConfigExporterStruct) DoJob(secrets []string,
 			}
 		}
 
+		// public
+		util.PrintStep("config-exporter", fmt.Sprintln("exporting publics"))
 		for _, pubConfType := range pubConfTypes {
 			finalValue, err := pubConfType.V1.getFinalValue()
 			if err != nil {
@@ -197,9 +224,98 @@ func (ModJobConfigExporterStruct) DoJob(secrets []string,
 				confKvs = append(confKvs, tuple.New2(pubConfType.V1.Key, finalValue))
 			}
 		}
+
+		// dist
+		if distcmd.IsValid() {
+			util.PrintStep("config-exporter", fmt.Sprintln("exporting dist"))
+
+			distyml, err := os.ReadFile(distcmd.DistConfigFilePath)
+			if err != nil {
+				fmt.Println(color.RedString("Read dist config file failed: %v", err))
+				return false
+			}
+			distconf := DeploymentDistConfYaml{}
+			err = yamlext.UnmarshalAndValidate(distyml, &distconf)
+			if err != nil {
+				fmt.Println(color.RedString("Unmarshal dist config file failed: %v", err))
+				return false
+			}
+			fmt.Println("DeploymentDistConfYaml", distconf)
+			// DIST_UNIQUE_ID
+			_, contain := distconf.Distribution[distcmd.DistNode]
+			if !contain {
+				fmt.Println(color.RedString("Dist node not the deployment node: %s", distcmd.DistNode))
+				return false
+			}
+			if distcmd.DistInstanceIdx >= len(distconf.Distribution[distcmd.DistNode]) {
+				fmt.Println(color.RedString("Dist instance index out of range: %d, max: %d", distcmd.DistInstanceIdx, len(distconf.Distribution[distcmd.DistNode])))
+				return false
+			}
+			distuid := distconf.Distribution[distcmd.DistNode][distcmd.DistInstanceIdx]
+			confKvs = append(confKvs, tuple.New2("DIST_UNIQUE_ID", distuid))
+
+			// DIST_CONF_{UNIQUE_ID}_NODE & DIST_CONF_{UNIQUE_ID}_NODE_IP
+			for node, nodesvcs := range distconf.Distribution {
+				for _, serviceuid := range nodesvcs {
+					confKvs = append(confKvs, tuple.New2(
+						fmt.Sprintf("DIST_CONF_%s_NODE", serviceuid),
+						node,
+					))
+					confKvs = append(confKvs, tuple.New2(
+						fmt.Sprintf("DIST_CONF_%s_NODE_IP", serviceuid),
+						distconf.NodeIps[node],
+					))
+				}
+			}
+
+			// DIST_CONF_{UNIQUE_ID}_xxx
+			eachUniqueConf := map[string]map[string]string{}
+			for confkey, node := range distconf.Conf {
+				if confkey != "global" {
+					eachUniqueConf[confkey] = node
+				}
+			}
+			// global conf will override conf not specified in eachUniqueConf
+			if gconf, ok := distconf.Conf["global"]; ok {
+				for gconfkey, gconfvalue := range gconf {
+					for seviceuid, svcconf := range eachUniqueConf {
+						if _, ok := svcconf[gconfkey]; !ok {
+							eachUniqueConf[seviceuid][gconfkey] = gconfvalue
+						}
+					}
+				}
+			}
+			for serviceuid, svcconf := range eachUniqueConf {
+				for confkey, confvalue := range svcconf {
+					confKvs = append(confKvs, tuple.New2(fmt.Sprintf("DIST_CONF_%s_%s", serviceuid, confkey), confvalue))
+				}
+			}
+
+			// backup, install, recover, entrypoint .sh
+			createSh := func(name string, content string) {
+				name = filepath.Join(util.GetEntryDir(), name)
+				err = os.MkdirAll(filepath.Dir(name), 0755)
+				if err != nil {
+					fmt.Println(color.RedString("mkdir %s failed: %s", filepath.Dir(name), err))
+					return
+				}
+				err = os.WriteFile(name, []byte(content), 0744)
+				if err != nil {
+					fmt.Println(color.RedString("write sh file %s failed: %s", name, err))
+					return
+				}
+				fmt.Println(color.GreenString("create sh file %s successfully", name))
+			}
+
+			createSh("backup.sh", distconf.StateBackup)
+			createSh("install.sh", distconf.Install)
+			createSh("restore.sh", distconf.StateRestore)
+			createSh("entrypoint.sh", distconf.EntryPoint)
+		}
+
 		return true
 	}() {
-		return
+		os.Exit(1)
 	}
 
 	// output to export script

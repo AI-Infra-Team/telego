@@ -56,23 +56,39 @@ func (b *CheckURLAccessibilityBuilder) SetTimeout(timeout time.Duration) *CheckU
 
 // 直接调用 checkURLAccessibility
 func (b *CheckURLAccessibilityBuilder) CheckAccessibility() error {
-	client := http.Client{
-		Timeout: b.config.Timeout,
+	successChan := make(chan struct{}, 1)
+	errChan := make(chan error, 3)
+
+	for i := 0; i < 3; i++ {
+		go func() {
+			client := http.Client{Timeout: b.config.Timeout}
+			resp, err := client.Head(b.config.URL)
+			if err != nil {
+				errChan <- fmt.Errorf("request failed: %v", err)
+				return
+			}
+			defer resp.Body.Close()
+
+			if resp.StatusCode >= 200 && resp.StatusCode < 300 {
+				successChan <- struct{}{}
+			} else {
+				errChan <- fmt.Errorf("HTTP status error: %d", resp.StatusCode)
+			}
+		}()
 	}
 
-	// 发送 HEAD 请求
-	resp, err := client.Head(b.config.URL)
-	if err != nil {
-		return fmt.Errorf("请求失败: %v", err)
+	errorCount := 0
+	for {
+		select {
+		case <-successChan:
+			return nil
+		case err := <-errChan:
+			errorCount++
+			if errorCount == 3 {
+				return err
+			}
+		}
 	}
-	defer resp.Body.Close()
-
-	// 检查 HTTP 状态码
-	if resp.StatusCode >= 200 && resp.StatusCode < 300 {
-		return nil // 成功访问
-	}
-
-	return fmt.Errorf("HTTP 状态码错误: %d", resp.StatusCode)
 }
 
 // 获取文件总大小

@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-	"telego/app/config"
 	"telego/util"
 
 	"github.com/fatih/color"
@@ -22,7 +21,7 @@ func (i *MenuItem) EnterItemUploadTemplate() DispatchExecRes {
 				fmt.Println(color.RedString("Upload template error: %s", err))
 			}
 
-			localPath := path.Join(path.Dir(filepath.ToSlash(config.Load().ProjectDir)), "teleyard-template")
+			localPath := path.Join(path.Dir(filepath.ToSlash(ConfigLoad().ProjectDir)), "teleyard-template")
 
 			err = os.RemoveAll("teleyard-template.zip")
 			if err != nil {

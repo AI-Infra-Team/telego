@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 
-	"telego/app/config"
 	"telego/util"
 
 	"github.com/fatih/color"
@@ -25,11 +24,11 @@ type ModJobApplyStruct struct{}
 
 var ModJobApply ModJobApplyStruct
 
-func (m ModJobApplyStruct) JobCmdName() string {
-	return "apply"
+func (ModJobApplyStruct) JobCmdName() string {
+	return "apply-k8s"
 }
 
-func (_ ModJobApplyStruct) ParseJob(applyCmd *cobra.Command) *cobra.Command {
+func (ModJobApplyStruct) ParseJob(applyCmd *cobra.Command) *cobra.Command {
 	job := &ApplyJob{}
 
 	// 绑定命令行标志到结构体字段
@@ -66,7 +65,7 @@ func (_ ModJobApplyStruct) applyLocal(job ApplyJob) {
 		fmt.Println(color.RedString("helm:%v, helm-ns%v suppose to be aligned"))
 		return
 	}
-	os.Chdir(path.Join(config.Load().ProjectDir, job.Project))
+	os.Chdir(path.Join(ConfigLoad().ProjectDir, job.Project))
 
 	errs := []error{}
 	for i, k8s := range job.K8sDirs {
@@ -107,13 +106,13 @@ func (_ ModJobApplyStruct) applyLocal(job ApplyJob) {
 	}
 }
 
-func (_ ModJobApplyStruct) NewApplyCmd(
+func (m ModJobApplyStruct) NewApplyCmd(
 	prj string,
 	k8ss map[string]DeploymentK8s,
 	helms map[string]DeploymentHelm,
 	clusterContextName string,
 ) []string {
-	cmds := []string{"telego", "apply", "--project", prj}
+	cmds := []string{"telego", m.JobCmdName(), "--project", prj}
 
 	for _, k8s := range k8ss {
 		cmds = append(cmds, "--k8s", *k8s.K8sDir)

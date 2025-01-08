@@ -5,7 +5,6 @@ import (
 	"os"
 	"path"
 	"strings"
-	"telego/app/config"
 	"telego/util"
 
 	"github.com/fatih/color"
@@ -30,7 +29,7 @@ func GenSpecTemp(thepath string) string {
 
 	pathBase := path.Base(thepath)
 	// pathDir := path.Dir(thepath)
-	targetDir := path.Join(config.Load().ProjectDir, pathBase)
+	targetDir := path.Join(ConfigLoad().ProjectDir, pathBase)
 	// fmt.Printf("%s -> %s\n", path.Join("teleyard-template", thepath), targetDir)
 	// os.Exit(1)
 	err := util.ModRunCmd.CopyDirContentOrFileTo(path.Join("teleyard-template", thepath), targetDir)

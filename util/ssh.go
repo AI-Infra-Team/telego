@@ -82,6 +82,7 @@ func sshWithConf(server string, config *ssh.ClientConfig) (*ssh.Client, *ssh.Ses
 }
 
 func sshWithPasswd(server, username, passwd string) (*ssh.Client, *ssh.Session, error) {
+	Logger.Debugf("sshWithPasswd to %s@%s", username, server)
 	config := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
