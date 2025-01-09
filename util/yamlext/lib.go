@@ -72,9 +72,10 @@ func UnmarshalAndValidate(data []byte, v interface{}) error {
 		return errors.New("provided value must be a non-nil pointer")
 	}
 
+	// not struct don't need validate
 	val = val.Elem()
 	if val.Kind() != reflect.Struct {
-		return errors.New("provided value must point to a struct")
+		return nil
 	}
 
 	for i := 0; i < val.NumField(); i++ {

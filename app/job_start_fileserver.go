@@ -11,6 +11,7 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"github.com/thoas/go-funk"
 )
 
 type StartFileserverMode = int
@@ -75,6 +76,20 @@ func (m ModJobStartFileserverStruct) dispatchMode(job StartFileserverJob) {
 	switch job.Mode {
 	case StartFileserverModeCaller:
 		{
+			// check dist dir with telego_* files
+			distDir := filepath.Join(util.GetEntryDir(), "dist")
+			files, err := os.ReadDir(distDir)
+			if err != nil {
+				fmt.Println(color.RedString("read dist dir failed, err: %v", err))
+				os.Exit(1)
+			}
+			if !funk.Contains(files, func(file os.DirEntry) bool {
+				return strings.HasPrefix(file.Name(), "telego_")
+			}) {
+				fmt.Println(color.RedString("run start-fileserver under telego project root dir, and make sure already compiled with 2.build.py"))
+				os.Exit(1)
+			}
+
 			// ssh to main node and start the fileserver
 			ok, mainnodePw := util.StartTemporaryInputUI(color.GreenString(
 				"启动 MAIN_NODE 需要输入 MAIN_NODE密码"),
@@ -87,17 +102,19 @@ func (m ModJobStartFileserverStruct) dispatchMode(job StartFileserverJob) {
 
 			mainNodeHostArr := []string{fmt.Sprintf("%s@%s", util.MainNodeUser, util.MainNodeIp)}
 
-			fmt.Println(color.BlueString("getting remote arch"))
+			util.PrintStep("StartFileserver", color.BlueString("getting remote arch"))
 			arch := util.GetRemoteArch(mainNodeHostArr, mainnodePw)[0]
 			switch arch {
 			case util.ArchAmd64, util.ArchArm64:
 				// fmt.Printf("entry dir %s\n", util.GetEntryDir())
 				from := filepath.Join(util.GetEntryDir(), fmt.Sprintf("dist/telego_linux_%s", arch))
 				to := "./"
-				fmt.Println(color.BlueString("\ntransfering files (%s)->(%s)", from, to))
+				util.PrintStep("StartFileserver", color.BlueString("\ntransfering files (%s)->(%s)", from, to))
+				// fmt.Println(color.BlueString("\ntransfering files (%s)->(%s)", from, to))
 				util.UploadToMainNode(from, to)
 
-				fmt.Println(color.BlueString("\nstarting fileserver"))
+				// fmt.Println(color.BlueString("\nstarting fileserver"))
+				util.PrintStep("StartFileserver", color.BlueString("\nstarting fileserver"))
 				remoteCmd0 := fmt.Sprintf("cp ~/telego_linux_%s /usr/bin/telego", arch)
 				remoteCmd1 := "chmod +x /usr/bin/telego"
 				remoteCmd2 := "chown {user} /usr/bin/telego"
@@ -218,7 +235,7 @@ func (m ModJobStartFileserverStruct) ExecDelegate(sshModeStr string) DispatchExe
 	return DispatchExecRes{
 		Exit: true,
 		ExitWithDelegate: func() {
-			fmt.Println(color.BlueString("Starting job ssh... cmds[%v]", cmd))
+			util.PrintStep("StartFileserver", color.BlueString("Starting job ssh... cmds[%v]", cmd))
 			_, err := util.ModRunCmd.ShowProgress(cmd[0], cmd[1:]...).BlockRun()
 			if err != nil {
 				fmt.Println(color.RedString("job ssh error: %v", err))

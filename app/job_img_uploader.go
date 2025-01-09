@@ -290,7 +290,6 @@ func (m *ModJobImgUploaderStruct) uploadImage(imagePath string) {
 		os.Exit(1)
 	}
 	img_upload_server = util.UrlJoin(strings.TrimSpace(img_upload_server), "/upload")
-	img_upload_server = util.UrlJoin(strings.TrimSpace(img_upload_server), "/upload")
 
 	util.PrintStep("ImgUploader", fmt.Sprintf("开始上传镜像 %v", files))
 	res, err := util.UploadMultipleFilesInOneConnection(files, img_upload_server)
@@ -304,8 +303,6 @@ func (m *ModJobImgUploaderStruct) uploadImage(imagePath string) {
 }
 
 func (m *ModJobImgUploaderStruct) startServer(workdir string) {
-	util.PrintStep("ImgUploader", "starting server... at "+workdir)
-
 	util.PrintStep("ImgUploader", "starting server... at "+workdir)
 
 	_, err := os.Stat(workdir)

@@ -4,3 +4,4 @@ Dockerfile
 build
 compile_conf.yml
 .test_tmp
+compile_conf_gen.go
