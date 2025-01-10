@@ -36,6 +36,8 @@ func (i *MenuItem) DispatchEnterNext(prefixNodes []*MenuItem) DispatchEnterNextR
 					// }
 				}
 			}
+		} else if i.Name == "deploy" {
+			WaitInitMenuTree()
 		} else if i.Name == "cancel" {
 			util.Logger.Debugf("DispatchEnterNext: cancel")
 			return i.EnterItemCancel(prefixNodes)

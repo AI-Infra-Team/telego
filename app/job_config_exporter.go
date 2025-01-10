@@ -72,30 +72,61 @@ func (pipeline *ConfigExporterPipeline) getFinalValue() (string, error) {
 		return pipeline.Value, nil
 	}
 
-	// 将Value解析为map
-	var parsedMap map[string]interface{}
-	err := yamlext.UnmarshalAndValidate([]byte(pipeline.Value), &parsedMap)
+	var parsedMap_ map[string]interface{}
+	err := yamlext.UnmarshalAndValidate([]byte(pipeline.Value), &parsedMap_)
 	if err != nil {
 		return "", fmt.Errorf("failed to parse value as YAML: %v", err)
 	}
+	// var parsedMap parseMapValueMap
+	// err = mapstructure.Decode(parsedMap_, &parsedMap)
+	// if err != nil {
+	// 	return "", fmt.Errorf("failed to parse value by mapstructure: %v", err)
+	// }
 
 	// 递归地获取子键的最终值
-	var currentValue interface{} = parsedMap
-	for _, subkey := range pipeline.YamlMapGet {
-		if subMap, ok := currentValue.(map[string]interface{}); ok {
-			// 如果当前值是map类型，则查找subkey
-			currentValue, ok = subMap[subkey]
-			if !ok {
-				return "", fmt.Errorf("key '%s' not found in map", subkey)
+	var currentValue = parsedMap_
+	var resultValue string
+	for i, subkey := range pipeline.YamlMapGet {
+		// 如果当前值是map类型，则查找subkey
+		currentValue_, ok := currentValue[subkey]
+		if !ok {
+			return "", fmt.Errorf("key '%s' not found in map", subkey)
+		}
+		if i == len(pipeline.YamlMapGet)-1 {
+			switch v := currentValue_.(type) {
+			case int:
+				resultValue = string(v)
+			case string:
+				resultValue = v
+			default:
+				// resultValue = fmt.Sprintf("%v", v)
+				return "", fmt.Errorf("unsupported type: %T with value: %v", v, v)
 			}
+			// err := mapstructure.Decode(currentValue_, &resultValue)
+			// if err != nil {
+			// 	return "", fmt.Errorf("failed to decode map: %v", err)
+			// }
 		} else {
-			return "", fmt.Errorf("current value is not a map, unable to extract key '%s'", subkey)
+
+			// err := mapstructure.Decode(currentValue_, &currentValue)
+			// if err != nil {
+			// 	return "", fmt.Errorf("failed to decode map: %v", err)
+			// }
 		}
 	}
+	// else {
+	// 	return "", fmt.Errorf("current value is not a map, unable to extract key '%s'", subkey)
+	// }
 
-	// 将最终值转换为string并返回
-	pipeline.Value = currentValue.(string)
-	return pipeline.Value, nil
+	// // 将最终值转换为string并返回
+	// switch v := currentValue.(type) {
+	// case parseMapValueStr:
+	// 	pipeline.Value = string(v)
+	// default:
+	// 	pipeline.Value = fmt.Sprintf("%v", v)
+	// }
+	pipeline.Value = resultValue
+	return resultValue, nil
 }
 
 func (ModJobConfigExporterStruct) DoJob(secrets []string,

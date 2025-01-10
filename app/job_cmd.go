@@ -5,9 +5,11 @@ import (
 	"os"
 	"strings"
 	"telego/app/config"
+	"telego/util"
 
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
+	"github.com/thoas/go-funk"
 )
 
 type CmdJob struct {
@@ -63,19 +65,25 @@ func (_ ModJobCmdStruct) CmdLocal(job CmdJob) {
 	}
 
 	// avoid nil ptr for conf
-	_ = config.LoadFake()
 
-	rootMenu := InitMenuTree(false)
+	loadedConfig := config.MayFailLoad(util.WorkspaceDir())
+	fmt.Println("loadedConfig:", loadedConfig)
+	rootMenu := InitMenuTree(loadedConfig)
 	cmds := strings.Split(job.CmdPath, "/")
 	prefixes := []*MenuItem{}
 	for i, cmd := range cmds {
 		if cmd == "" {
 			continue
 		}
-
+		if rootMenu.Name == "deploy" {
+			WaitInitMenuTree()
+		}
 		found := rootMenu.FindChild(cmd)
 		if found == nil {
-			fmt.Println(color.RedString("Command not found: %s, cmd slice: %s", job.CmdPath, cmd))
+			fmt.Println(color.RedString(
+				"Command not found: %s, looking for cmd slice: %s, existing cmds: %v",
+				job.CmdPath, cmd, funk.Map(rootMenu.Children,
+					func(c *MenuItem) string { return c.Name })))
 			os.Exit(1)
 		}
 		if i < len(cmds)-1 {

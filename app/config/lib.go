@@ -34,6 +34,33 @@ func LoadFake() Config {
 	}
 }
 
+// func Exists(workspace string) bool {
+// 	// Construct the path to the config.yaml file
+// 	configPath := filepath.Join(workspace, "config.yaml")
+
+// 	// Check if config file exists
+// 	_, err := os.Stat(configPath)
+// 	return os.IsNotExist(err)
+// }
+
+var cacheMayFailLoad []bool = nil
+
+// return false if load fake, true if load real
+func MayFailLoad(workspace string) bool {
+	if cacheMayFailLoad != nil {
+		return cacheMayFailLoad[0]
+	}
+	configPath := filepath.Join(workspace, "config.yaml")
+	if _, err := os.Stat(configPath); os.IsNotExist(err) {
+		LoadFake()
+		cacheMayFailLoad = []bool{false}
+		return false
+	}
+	Load(workspace, nil)
+	cacheMayFailLoad = []bool{true}
+	return true
+}
+
 // Load loads configuration from a YAML file located at {workspace}/config.yaml
 func Load(
 	workspace string,

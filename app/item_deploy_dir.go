@@ -7,6 +7,7 @@ import (
 )
 
 func (i *MenuItem) LoadSubPrjs() {
+	util.PrintStep("LoadSubPrjs", "from "+ConfigLoad().ProjectDir)
 	if i.Name == "deploy" { // this is mapped to project dir
 
 		// i.Children = []*MenuItem{}

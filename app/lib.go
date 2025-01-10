@@ -108,6 +108,10 @@ func (i *MenuItem) getEmbedScript() string {
 
 var initMenuTreeWg sync.WaitGroup
 
+func WaitInitMenuTree() {
+	initMenuTreeWg.Wait()
+}
+
 // 初始化菜单树ji
 func InitMenuTree(loadSubPrjs bool) *MenuItem {
 	// 解析 YAML 数据

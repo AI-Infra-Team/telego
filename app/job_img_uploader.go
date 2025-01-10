@@ -419,14 +419,14 @@ func imgUploaderUploadHandlerV2(c *gin.Context, workdir string) {
 		pw := string(pw_)
 		imgdir, err := handler.findPrevTempUsr(uploaded.Username, pw)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("prev temp user not found: %v", err)})
 			return
 		}
 
 		if uploaded.CheckDir {
 			tarlist_, err := os.ReadDir(path.Join(workdir, imgdir))
 			if err != nil {
-				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("read dir failed: %v", err)})
 				return
 			}
 			tarlist := make([]string, 0)
@@ -445,7 +445,7 @@ func imgUploaderUploadHandlerV2(c *gin.Context, workdir string) {
 
 		succress, err := handler.checkAndUploadImgs(path.Join(workdir, imgdir))
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("check and upload imgs failed: %v", err)})
 			return
 		}
 		c.JSON(http.StatusOK, gin.H{"success": succress})
@@ -453,19 +453,19 @@ func imgUploaderUploadHandlerV2(c *gin.Context, workdir string) {
 		printtag := "ImgUploaderCreatingTemp"
 		registryConfYaml, err := util.MainNodeConfReader{}.ReadSecretConf(util.SecretConfTypeImgRepo{})
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("read img repo conf failed: %v", err)})
 			return
 		}
 		registryConf := util.ContainerRegistryConf{}
 		err = yamlext.UnmarshalAndValidate([]byte(registryConfYaml), &registryConf)
 		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("unmarshal img repo conf failed: %v", err)})
 			return
 		}
 
 		user_pw_dir, err := handler.generateTempUser()
 		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("generate temp user failed: %v", err)})
 			return
 		}
 
@@ -497,7 +497,7 @@ func imgUploaderUploadHandlerV2(c *gin.Context, workdir string) {
 		err = os.MkdirAll(path.Join(workdir, user_pw_dir.V3), 0755)
 		if err != nil {
 			err = fmt.Errorf("failed to create temp dir: %w", err)
-			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to create temp dir: %v", err)})
 			return
 		}
 
@@ -920,10 +920,10 @@ func (m *ImgUploaderUploadHandlerV2) record(user, pw, dir string) {
 
 func ImgUploaderUploadHandlerV1(c *gin.Context) {
 	// 先返回响应头，表示开始处理
-	c.Header("X-Upload-Status", "Started")
-	c.JSON(http.StatusOK, gin.H{
-		"message": "Upload started",
-	})
+	// c.Header("X-Upload-Status", "Started")
+	// c.JSON(http.StatusOK, gin.H{
+	// 	"message": "Upload started",
+	// })
 
 	// 检查请求方法是否为 POST
 	if c.Request.Method != "POST" {
