@@ -52,6 +52,12 @@ func (m *ModJobImgUploaderStruct) JobCmdName() string {
 }
 
 func (m *ModJobImgUploaderStruct) uploadImageV2() {
+	err := NewBinManager(BinManagerWinfsp{}).MakeSureWith()
+	if err != nil {
+		fmt.Println(color.RedString("winfsp is not installed: %v", err))
+		os.Exit(1)
+	}
+
 	// get image uploader url
 	util.PrintStep("ImgUploader", "fetching image uploader url")
 	img_upload_server := func() string {
@@ -89,7 +95,7 @@ func (m *ModJobImgUploaderStruct) uploadImageV2() {
 
 	mountPath := "D:/img-uploader-temp"
 	os.RemoveAll(mountPath)
-	err := os.MkdirAll(filepath.Join(mountPath, "使用传输工具在此新建任意文件夹后，等待刷新和下一步提示"), 0755)
+	err = os.MkdirAll(filepath.Join(mountPath, "使用传输工具在此新建任意文件夹后，等待刷新和下一步提示"), 0755)
 	if err != nil {
 		fmt.Println(color.RedString("Failed to create dir: %v", err))
 		os.Exit(1)

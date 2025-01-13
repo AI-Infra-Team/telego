@@ -1,0 +1,81 @@
+package app
+
+import (
+	"fmt"
+	"os"
+
+	"github.com/fatih/color"
+	"github.com/spf13/cobra"
+)
+
+type MountStoreJob struct {
+	BinPrj string
+	Bin    string // left empty to MountStore all
+	// BinMeta DeploymentBinDetails
+}
+
+type ModJobMountStoreStruct struct{}
+
+var ModJobMountStore ModJobMountStoreStruct
+
+func (m ModJobMountStoreStruct) JobCmdName() string {
+	return "MountStore"
+}
+
+func (_ ModJobMountStoreStruct) ParseJob(MountStoreCmd *cobra.Command) *cobra.Command {
+	job := &MountStoreJob{}
+	// 绑定命令行标志到结构体字段
+	MountStoreCmd.Flags().StringVar(&job.BinPrj, "bin-prj", "", "Path to MountStore")
+	MountStoreCmd.Flags().StringVar(&job.Bin, "bin", "", "Path to binary")
+	// bool job.BinMeta.NoDefaultMountStoreer
+	// MountStoreCmd.Flags().BoolVar(&job.BinMeta.NoDefaultMountStoreer, "no-default-MountStoreer", false, "No default MountStoreer")
+	// MountStoreCmd.Flags().StringVar(&job.BinMeta.WinMountStoreer, "win-MountStoreer", "", "Windows MountStoreer")
+	// MountStoreCmd.Flags().StringVar(&job.BinMeta.Appimage, "appimage", "", "Appimage")
+
+	MountStoreCmd.Run = func(_ *cobra.Command, _ []string) {
+		fmt.Println(color.BlueString("MountStore job running %s %s", job.BinPrj, job.Bin))
+		// if job.Bin == "" {
+		// 	fmt.Println(color.RedString("No bin provided"))
+		// 	os.Exit(1)
+		// }
+		if job.BinPrj == "" {
+			fmt.Println(color.RedString("No bin provided"))
+			os.Exit(1)
+		}
+		ModJobMountStore.MountStoreLocalByJob(*job)
+	}
+
+	// err := MountStoreCmd.Execute()
+	// if err != nil {
+	// 	return
+	// }
+
+	return MountStoreCmd
+
+	// return JobParse{
+	// 	Cmd: MountStoreCmd,
+	// 	Cb: func() {
+
+	// 		os.Exit(0)
+	// 	},
+	// }
+}
+
+func NewMountStoreCmd(binPack, bin string) []string {
+	cmds := []string{"telego", "MountStore",
+		"--bin", bin,
+		"--bin-prj", binPack}
+	// "--no-default-MountStoreer %v "+
+	// "--win-MountStoreer", meta.WinMountStoreer,
+	// "--appimage", meta.Appimage}
+
+	// if meta.NoDefaultMountStoreer {
+	// 	// cmd += "--no-default-MountStoreer "
+	// 	cmds = append(cmds, "--no-default-MountStoreer")
+	// }
+	return cmds
+}
+
+func (m ModJobMountStoreStruct) DoJob(job MountStoreJob) {
+
+}

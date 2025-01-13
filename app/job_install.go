@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"telego/util"
 
@@ -165,13 +166,24 @@ func (_ ModJobInstallStruct) InstallLocalByJob(job InstallJob) {
 						fmt.Sprintf("http://%s:8003/%s/%s", util.MainNodeIp, job.BinPrj, bininfo.WinInstaller),
 						path.Join(installTempDir, bininfo.WinInstaller),
 					)
-					// start installer
-					_, err := util.ModRunCmd.ShowProgress(path.Join(installTempDir, bininfo.WinInstaller)).BlockRun()
-					if err != nil {
-						// fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
-						// return
-						return fmt.Errorf("failed to install %s: %v", binname, err)
+					if strings.HasSuffix(bininfo.WinInstaller, ".msi") {
+						// start installer
+						_, err := util.ModRunCmd.ShowProgress("msiexec", "/i", strings.ReplaceAll(path.Join(installTempDir, bininfo.WinInstaller), "/", "\\\\"), "/quiet", "/norestart").BlockRun()
+						if err != nil {
+							// fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
+							// return
+							return fmt.Errorf("failed to install %s: %v", binname, err)
+						}
+					} else {
+						// start installer
+						_, err := util.ModRunCmd.ShowProgress(path.Join(installTempDir, bininfo.WinInstaller)).BlockRun()
+						if err != nil {
+							// fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
+							// return
+							return fmt.Errorf("failed to install %s: %v", binname, err)
+						}
 					}
+
 					return nil
 				} else {
 					// fmt.Println(color.RedString("At least one of 'non no_default_installer' or 'win_installer' should be provided for windows"))
@@ -191,7 +203,7 @@ func (_ ModJobInstallStruct) InstallLocalByJob(job InstallJob) {
 
 		if err != nil {
 			fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
-			return
+			os.Exit(1)
 		} else {
 			fmt.Println(color.GreenString("Installed %s / %s", job.BinPrj, binname))
 		}
