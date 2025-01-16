@@ -50,15 +50,6 @@ var MenuTreeData = `children:
     - children: []
       comment: "\u6839\u636E\u6A21\u677F\u751F\u6210\u9879\u76EE"
       name: generate
-    - children: []
-      comment: "\u76F4\u63A5\u5B89\u88C5\u8BE5\u9879\u76EE"
-      name: install
-    comment: "\u6A21\u677F\u9879\u76EE"
-    name: bin_winfsp
-  - children:
-    - children: []
-      comment: "\u6839\u636E\u6A21\u677F\u751F\u6210\u9879\u76EE"
-      name: generate
     comment: "\u6A21\u677F\u9879\u76EE"
     name: k8s_kubepi_grafana
   - children:

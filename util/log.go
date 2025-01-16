@@ -23,7 +23,11 @@ func LogDir() string {
 	logDir := filepath.Join(WorkspaceDir(), "logs")
 	if !createdLogDir {
 		PrintStep("log", "create log dir")
-		os.MkdirAll(logDir, 0755)
+		err := os.MkdirAll(logDir, 0755)
+		if err != nil || func() bool { _, err = os.Stat(logDir); return err != nil }() {
+			fmt.Println("LogDir: MkdirAll error")
+			os.Exit(1)
+		}
 		createdLogDir = true
 	}
 	return logDir
@@ -35,7 +39,7 @@ func SetupFileLog() *os.File {
 	Logger.SetLevel(logrus.DebugLevel)
 	// time stamp
 	curtime := time.Now().Format("2006-01-02-15h04m05s")
-	file, err := os.OpenFile(path.Join(LogDir(), fmt.Sprintf("%s.log", curtime)), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0666)
+	file, err := os.OpenFile(path.Join(LogDir(), fmt.Sprintf("%s.log", curtime)), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
 	if err != nil {
 		fmt.Printf("Error opening log file: %v\n", err)
 		return nil
