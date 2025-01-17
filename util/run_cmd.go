@@ -190,7 +190,7 @@ func (m ModRunCmdStruct) CmdModels() CmdModels {
 	return CmdModels{}
 }
 
-// 在timeout时间范围内条件不满足，返回error
+// 在 timeout 时间范围内条件不满足，返回 error
 // 满足了条件，继续
 func RunCmdWithTimeoutCheck(
 	cmdStr []string, timeout time.Duration, conditionMet func(output string) bool) (*bytes.Buffer, *exec.Cmd, error) {

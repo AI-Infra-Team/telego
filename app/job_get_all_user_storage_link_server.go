@@ -4,6 +4,7 @@ package app
 
 import (
 	"fmt"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/cobra"
@@ -13,24 +14,35 @@ type ModJobGetAllUserStorageLinkServerStruct struct{}
 
 var ModJobGetAllUserStorageLinkServer ModJobGetAllUserStorageLinkServerStruct
 
+type UserStorage struct {
+	rootStorage string // 根据 main_node 上存储名称来，例如 gemini-nm / gemini-sh
+	subPath     []string
+}
+
 func (m ModJobGetAllUserStorageLinkServerStruct) JobCmdName() string {
 	return "get-all-user-storage-server"
 }
 
 func (m ModJobGetAllUserStorageLinkServerStruct) handleGetPath(c *gin.Context) {
-	userName := c.DefaultQuery("username", "")
-	if userName == "" {
-		c.JSON(400, gin.H{
-			"error": "username is required",
+	var req GetAllUserStorageLinkRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": fmt.Sprintf("Invalid request payload: %v", err),
 		})
 		return
 	}
 
-	// 处理
+	// 与 Gemini 交互
+	// 鉴权
+	// 返回集群信息，集群存储根目录列表，
 
-	// 未完成
-	c.JSON(200, GetAllUserStorageLinkResponse{
-		RemoteLinks: []string{"path1", "path2", "path3"},
+	// (未完成)
+	remoteLinks := []struct {
+		Link    string `json:"link"`
+		Storage string `json:"storage"`
+	}{}
+	c.JSON(http.StatusOK, GetAllUserStorageLinkResponse{
+		RemoteInfos: remoteLinks,
 	})
 }
 

@@ -16,7 +16,7 @@ var ModJobSshFs ModJobSshFsStruct
 // Usage:
 // telego sshfs --remotepath {} --localpath {}
 
-type sshFsJob struct {
+type sshFsArgv struct {
 	remotePath string
 	localPath  string
 }
@@ -26,7 +26,7 @@ func (m ModJobSshFsStruct) JobCmdName() string {
 }
 
 func (m ModJobSshFsStruct) ParseJob(sshFsCmd *cobra.Command) *cobra.Command {
-	job := &sshFsJob{}
+	job := &sshFsArgv{}
 
 	// 读入参数
 	sshFsCmd.Flags().StringVar(&job.remotePath, "remotepath", "", "sshfs mount - remote path")
@@ -42,7 +42,7 @@ func (m ModJobSshFsStruct) ParseJob(sshFsCmd *cobra.Command) *cobra.Command {
 	return sshFsCmd
 }
 
-func (m ModJobSshFsStruct) doMount(job *sshFsJob) error {
+func (m ModJobSshFsStruct) doMount(job *sshFsArgv) error {
 	if job.localPath == "" || job.remotePath == "" {
 		return fmt.Errorf("doMount: sshfs mount argument empty")
 	}

@@ -141,6 +141,8 @@ func NewPubConfType(path string) PubConfType {
 	}
 }
 
+// image_uploader_url
+
 type PubConfTypeImgUploaderUrl struct{}
 
 var _ PubConfType = PubConfTypeImgUploaderUrl{}
@@ -150,6 +152,19 @@ func (r PubConfTypeImgUploaderUrl) PubConfPath() string {
 }
 
 func (r PubConfTypeImgUploaderUrl) Template() string {
+	return "http://127.0.0.1:8002"
+}
+
+// user_storage_server_url
+type PubConfUserStorageServerUrl struct{}
+
+var _ PubConfType = PubConfUserStorageServerUrl{}
+
+func (r PubConfUserStorageServerUrl) PubConfPath() string {
+	return "user_storage_server_url"
+}
+
+func (r PubConfUserStorageServerUrl) Template() string {
 	return "http://127.0.0.1:8002"
 }
 
