@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"telego/util"
 	"telego/util/gemini"
 	"time"
 
@@ -68,7 +69,12 @@ func (m ModJobInfraExporterSingleStruct) ParseJob(infraExporterSingleCmd *cobra.
 
 func collectMetrics() {
 	// 与 Gemini API 进行交互，拿到所有的 spaceID
-	gServer, err := gemini.NewGeminiServer("https://10.127.23.253:31443")
+	gUrl, err := (util.MainNodeConfReader{}).ReadSecretConf(util.SecretConfTypeGeminiAPIUrl{})
+	if err != nil {
+		fmt.Println("failed to read gemini config")
+	}
+	gUrl = strings.TrimSpace(gUrl)
+	gServer, err := gemini.NewGeminiServer(gUrl)
 	if err != nil {
 		fmt.Println("failed to create Gemini server ", err)
 	}
