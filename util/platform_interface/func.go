@@ -1,4 +1,4 @@
-package storage_interface
+package platform_interface
 
 import "telego/util"
 

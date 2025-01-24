@@ -7,10 +7,13 @@ import (
 	"io"
 	"net/http"
 	"os"
+	"os/exec"
 	"path"
 	"runtime"
 	"strings"
 	"telego/util"
+	"telego/util/gemini"
+	"telego/util/platform_interface"
 	"time"
 
 	"github.com/fatih/color"
@@ -22,14 +25,12 @@ type ModJobMountAllUserStorageStruct struct{}
 var ModJobMountAllUserStorage ModJobMountAllUserStorageStruct
 
 func (m ModJobMountAllUserStorageStruct) JobCmdName() string {
-	return "mount-all-user-storage"
+	return "usmnt"
 }
 
 // 请求结构体
-// 这里假设一个用户在 Gemini 等平台有相同的用户名与密码
 type GetAllUserStorageLinkRequest struct {
-	UserName string `json:"username"` // 第三方平台用户名
-	PassWord string `json:"password"` // 第三方平台密码
+	GeminiUserInfo gemini.GeminiUserInfo // gemini 平台账号
 }
 
 // 返回结构体
@@ -37,11 +38,11 @@ type GetAllUserStorageLinkResponse struct {
 	RemoteInfos []util.UserMountsInfo `json:"remote_infos"` // 用于挂载的远程链接信息
 }
 
-func (m ModJobMountAllUserStorageStruct) inputUserLoginInfo() (username, password string, err error) {
+func (m ModJobMountAllUserStorageStruct) inputUserLoginInfoByPlatform(platform platform_interface.Platform) (username, password string, err error) {
 	var ok bool
 	ok, username = util.StartTemporaryInputUI(
-		color.GreenString("ModJobMountAllUserStorageStruct.Run: Mount 用户存储空间需要鉴权，userName"),
-		"输入 userName",
+		color.GreenString("ModJobMountAllUserStorageStruct.Run: Mount 用户存储空间需要各平台用户名"),
+		fmt.Sprintf("输入 %s 平台用户名", platform.GetPlatformName()),
 		"回车确认，ctrl + c 取消",
 	)
 	if !ok {
@@ -51,8 +52,8 @@ func (m ModJobMountAllUserStorageStruct) inputUserLoginInfo() (username, passwor
 	}
 
 	ok, password = util.StartTemporaryInputUI(
-		color.GreenString("ModJobMountAllUserStorageStruct.Run: Mount 用户存储空间需要鉴权，passWord"),
-		"输入 passWord",
+		color.GreenString("ModJobMountAllUserStorageStruct.Run: Mount 用户存储空间需要各平台密码"),
+		fmt.Sprintf("输入 %s 平台密码", platform.GetPlatformName()),
 		"回车确认，ctrl + c 取消",
 	)
 	if !ok {
@@ -61,61 +62,6 @@ func (m ModJobMountAllUserStorageStruct) inputUserLoginInfo() (username, passwor
 		return
 	}
 	return
-}
-
-func (m ModJobMountAllUserStorageStruct) getUserLoginInfo() (string, string, error) {
-	var username, password string
-	// 登录验证
-	userLoginInfoFile := path.Join(util.WorkspaceDir(), "config/userinfo")
-	if _, err := os.Stat(userLoginInfoFile); err == nil {
-		// // 文件存在，尝试读取文件中的内容
-		var content []byte
-		content, err = os.ReadFile(userLoginInfoFile)
-		if err != nil {
-			return username, password, fmt.Errorf("m.getUserLoginInfo: %v", err)
-		}
-
-		// // 解析文件内容，查找 username 和 password
-		lines := strings.Split(string(content), "\n")
-		for _, line := range lines {
-			line = strings.TrimSpace(line) // 去掉行首尾的空格
-			if line == "" {
-				continue
-			}
-			if strings.HasPrefix(line, "username:") {
-				username = strings.TrimSpace(strings.TrimPrefix(line, "username:"))
-			} else if strings.HasPrefix(line, "password:") {
-				password = strings.TrimSpace(strings.TrimPrefix(line, "password:"))
-			}
-		}
-
-		// // 如果从文件中读取了有效的 username 和 password，则直接使用
-		if username != "" && password != "" {
-			return username, password, nil
-		} else {
-			fmt.Println("ModJobMountAllUserStorageStruct.Run: No valid credentials found in userinfo file, using UI for input.")
-			username, password, err = m.inputUserLoginInfo()
-			if err != nil {
-				return username, password, fmt.Errorf("ModJobMountAllUserStorageStruct.getUserLoginInfo: %v", err)
-			}
-		}
-	} else {
-		fmt.Println("ModJobMountAllUserStorageStruct.Run: No valid credentials found in userinfo file, using UI for input.")
-		username, password, err = m.inputUserLoginInfo()
-		if err != nil {
-			return username, password, fmt.Errorf("ModJobMountAllUserStorageStruct.getUserLoginInfo: %v", err)
-		}
-	}
-	return username, password, nil
-}
-
-func (m ModJobMountAllUserStorageStruct) saveUserLoginInfo(username, password string) error {
-	userLoginInfoFile := path.Join(util.WorkspaceDir(), "config/userinfo")
-	err := os.WriteFile(userLoginInfoFile, []byte("username: "+username+"\npassword: "+password+"\n"), 0644)
-	if err != nil {
-		return fmt.Errorf("ModJobMountAllUserStorageStruct.saveUserLoginInfo: Error writing to userinfo file: %v", err)
-	}
-	return nil
 }
 
 func (m ModJobMountAllUserStorageStruct) getLocalRootStorage() (string, error) {
@@ -161,15 +107,18 @@ func (m ModJobMountAllUserStorageStruct) getLocalRootStorage() (string, error) {
 }
 
 func (m ModJobMountAllUserStorageStruct) Run() {
-	username, password, err := m.getUserLoginInfo()
+	// 输入用户信息
+	gUsername, gPassword, err := m.inputUserLoginInfoByPlatform(platform_interface.GeminiPlatform{})
 	if err != nil {
 		fmt.Printf("ModJobMountAllUserStorageStruct.Run: %v", err)
 	}
 
 	// 初始化 http 请求
 	req := GetAllUserStorageLinkRequest{
-		UserName: username,
-		PassWord: password,
+		GeminiUserInfo: gemini.GeminiUserInfo{
+			Username: gUsername,
+			Password: gPassword,
+		},
 	}
 	reqBody, err := json.Marshal(req)
 	if err != nil {
@@ -184,7 +133,7 @@ func (m ModJobMountAllUserStorageStruct) Run() {
 		return
 	}
 	client := &http.Client{Timeout: 60 * time.Second} // 设置 60 秒超时
-	httpResp, err := client.Post(util.UrlJoin(serverUrl, "/mount_all_user_storage_server_url"), "application/json", bytes.NewBuffer(reqBody))
+	httpResp, err := client.Post(util.UrlJoin(serverUrl, "/get/user/storage/link"), "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
 		fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error getting response (server_url: %s, fullUrl: %s)", serverUrl, util.UrlJoin(serverUrl, "/mount_all_user_storage_server_url"))
 		return
@@ -202,6 +151,17 @@ func (m ModJobMountAllUserStorageStruct) Run() {
 		fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error decoding response: %v", err)
 		return
 	}
+
+	// 打印返回信息
+	fmt.Print("\n--------------------------------------------------\n")
+	for idx, userMountInfo := range resp.RemoteInfos {
+		fmt.Printf("Storage-%d\n", idx)
+		fmt.Printf("type: %s, access-server: %s, root-path: %s\n", userMountInfo.UserStorage_.Type, userMountInfo.AccessServer, userMountInfo.UserStorage_.RootStorage)
+		for idx2, subPath := range userMountInfo.UserStorage_.SubPaths {
+			fmt.Printf("subpath-%d: %s\n", idx2, subPath)
+		}
+	}
+	fmt.Print("\n--------------------------------------------------\n")
 
 	// 用户指定本地挂载点
 	localRootStorage, err := m.getLocalRootStorage()
@@ -223,40 +183,18 @@ func (m ModJobMountAllUserStorageStruct) Run() {
 		}
 	}
 
-	// // 分系统挂载
-	// for _, userMountInfo := range resp.RemoteInfos {
-	// 	if runtime.GOOS == "linux" {
-	// 		// （未确定）
-	// 		sshFsArgv := &sshFsArgv{
-	// 			remotePath: userMountInfo.AccessServer + ":" + userMountInfo.UserStorage_.RootStorage,
-	// 			localPath:  path.Join(localRootStorage, userMountInfo.UserStorage_.Name()),
-	// 		}
-	// 		ModJobSshFs.doMount(sshFsArgv)
-
-	// 	} else if runtime.GOOS == "windows" {
-	// 		rCloneConfiger := util.NewRcloneConfiger(util.RcloneConfigTypeSsh{}, userMountInfo.UserStorage_.Name(), userMountInfo.AccessServer)
-	// 		rCloneConfiger.WithUser(userName, passWord).DoConfig()
-
-	// 		// (未实现)
-	// 	}
-	// }
-	fmt.Print("\n--------------------------------------------------\n")
-	fmt.Printf("Local mountpoint: %s", localRootStorage)
-	for idx, userMountInfo := range resp.RemoteInfos {
-		fmt.Printf("Storage-%d\n", idx)
-		fmt.Printf("type: %s, access-server: %s, root-path: %s\n", userMountInfo.UserStorage_.Type, userMountInfo.AccessServer, userMountInfo.UserStorage_.RootStorage)
-		for idx2, subPath := range userMountInfo.UserStorage_.SubPaths {
-			fmt.Printf("subpath-%d: %s\n", idx2, subPath)
+	if runtime.GOOS == "linux" {
+		for _, userMountInfo := range resp.RemoteInfos {
+			localSubPath := path.Join(localRootStorage, userMountInfo.UserStorage_.Type, path.Base(userMountInfo.UserStorage_.RootStorage))
+			if err := os.MkdirAll(localSubPath, 0755); err != nil {
+				fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error making local mount subpath: %v", err)
+			}
+			cmd := exec.Command("sshpass", "-p", req.GeminiUserInfo.Password, "sshfs", req.GeminiUserInfo.Username+"@"+userMountInfo.AccessServer+":"+path.Base(userMountInfo.UserStorage_.RootStorage), localSubPath)
+			err := cmd.Run()
+			if err != nil {
+				fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error mounting: %v", err)
+			}
 		}
-	}
-	fmt.Print("\n--------------------------------------------------\n")
-
-	// 写入配置文件
-	err = m.saveUserLoginInfo(password, username)
-	if err != nil {
-		fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error saving user login info: %v", err)
-	} else {
-		fmt.Printf("ModJobMountAllUserStorageStruct.Run: Configuration saved successfully.")
 	}
 }
 

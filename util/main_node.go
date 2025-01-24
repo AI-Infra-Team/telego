@@ -288,7 +288,20 @@ func (r SecretConfTypeStorageViewYaml) Template() string {
 	})
 }
 
-// Gemini baseurl
+func (r SecretConfTypeStorageViewYaml) GetSftpServerByType(sType string) (storeManageServer, storeAccessServer string, err error) {
+	for _, storage := range r.Storages {
+		if storage.Type == sType {
+			storeManageServer = storage.StoreManageServer
+			storeAccessServer = storage.StoreAccessServer
+			err = nil
+			return
+		}
+	}
+	err = fmt.Errorf("ModJobMountAllUserStorageServerStruct.getSftpServerByType: No sftp server found")
+	return
+}
+
+// Gemini api URL
 type SecretConfTypeGeminiAPIUrl struct{}
 
 var _ SecretConfType = SecretConfTypeGeminiAPIUrl{}

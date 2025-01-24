@@ -8,7 +8,7 @@ import (
 	"strings"
 	"telego/util"
 	"telego/util/gemini"
-	"telego/util/storage_interface"
+	"telego/util/platform_interface"
 	"telego/util/yamlext"
 
 	"github.com/gin-gonic/gin"
@@ -20,20 +20,7 @@ type ModJobMountAllUserStorageServerStruct struct{}
 var ModJobMountAllUserStorageServer ModJobMountAllUserStorageServerStruct
 
 func (m ModJobMountAllUserStorageServerStruct) JobCmdName() string {
-	return "mount-all-user-storage-server"
-}
-
-func (m ModJobMountAllUserStorageServerStruct) getSftpServerByType(SecretConfTypeStorageViewYaml util.SecretConfTypeStorageViewYaml, sType string) (storeManageServer, storeAccessServer string, err error) {
-	for _, storage := range SecretConfTypeStorageViewYaml.Storages {
-		if storage.Type == sType {
-			storeManageServer = storage.StoreManageServer
-			storeAccessServer = storage.StoreAccessServer
-			err = nil
-			return
-		}
-	}
-	err = fmt.Errorf("ModJobMountAllUserStorageServerStruct.getSftpServerByType: No sftp server found")
-	return
+	return "usmnt-server"
 }
 
 func (m ModJobMountAllUserStorageServerStruct) printfUserStorageSets(userStorageSets []util.UserOneStorageSet) string {
@@ -65,7 +52,7 @@ func (m ModJobMountAllUserStorageServerStruct) doSftp(userStorageSets []util.Use
 
 	userMountsInfos := make([]util.UserMountsInfo, 0)
 	for _, userStorageSet := range userStorageSets {
-		mServer, aServer, err := m.getSftpServerByType(SecretConfTypeStorageViewYaml, userStorageSet.Type)
+		mServer, aServer, err := SecretConfTypeStorageViewYaml.GetSftpServerByType(userStorageSet.Type)
 		if err != nil {
 			return nil, fmt.Errorf("ModJobMountAllUserStorageServerStruct.doSftp: Error getSftpServerByType: %v", err)
 		}
@@ -110,16 +97,16 @@ func (m ModJobMountAllUserStorageServerStruct) handleGetPath(c *gin.Context) {
 	}
 
 	// 与 Gemini 交互
-	userStorageSets, err := storage_interface.GetAllStorageByUser(gServer, req.UserName, req.PassWord)
+	userStorageSets, err := platform_interface.GetAllStorageByUser(gServer, req.GeminiUserInfo.Username, req.GeminiUserInfo.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("ModJobMountAllUserStorageServerStruct.handleGetPath: Error getting all storage by user (username: %s, password: %s): %v", req.UserName, req.PassWord, err),
+			"error": fmt.Sprintf("ModJobMountAllUserStorageServerStruct.handleGetPath: Error getting all storage by user (username: %s, password: %s): %v", req.GeminiUserInfo.Username, req.GeminiUserInfo.Password, err),
 		})
 		return
 	}
 
 	// 返回集群信息，集群存储根目录列表
-	userMountInfos, err := m.doSftp(userStorageSets, req.UserName, req.PassWord)
+	userMountInfos, err := m.doSftp(userStorageSets, req.GeminiUserInfo.Username, req.GeminiUserInfo.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("ModJobMountAllUserStorageServerStruct.handleGetPath: Error performing SFTP operations: %v", err),
@@ -135,7 +122,7 @@ func (m ModJobMountAllUserStorageServerStruct) handleGetPath(c *gin.Context) {
 
 func (m ModJobMountAllUserStorageServerStruct) listenRequest(port int) {
 	r := gin.Default()
-	r.POST("/mount_all_user_storage_server_url", m.handleGetPath)
+	r.POST("/get/user/storage/link", m.handleGetPath)
 	if err := r.Run(fmt.Sprintf(":%d", port)); err != nil {
 		fmt.Printf("Failed to start server: %v\n", err)
 	}
@@ -152,58 +139,3 @@ func (m ModJobMountAllUserStorageServerStruct) ParseJob(getAllUserStorageLinkSer
 
 	return getAllUserStorageLinkServerCmd
 }
-
-// func (m ModJobMountAllUserStorageServerStruct) SyncStoreManageServerVirtualPath(userStorages []util.UserOneStorageSet) error {
-// 	ExpandUserStorageListWithCustom := func(userStorage []util.UserOneStorageSet) []util.UserOneStorageSet {
-// 		return userStorage
-// 	}
-
-// 	collectMountInfo := func(userStorage []util.UserOneStorageSet) (CollectMountInfo, error) {
-// 		configstr, err := util.MainNodeConfReader{}.ReadSecretConf(util.SecretConfTypeStorageViewYaml{})
-// 		if err != nil {
-// 			return CollectMountInfo{}, err
-// 		}
-
-// 		config := util.SecretConfTypeStorageViewYaml{}
-// 		err = yamlext.UnmarshalAndValidate([]byte(configstr), &config)
-// 		if err != nil {
-// 			return CollectMountInfo{}, err
-// 		}
-
-// 		return CollectMountInfo{
-// 			ManageAdmin:     config.StoreManageAdmin,
-// 			ManageAdminPass: config.StoreManageAdminPass,
-// 			EachStoreInfo: funk.Map(userStorage, func(userStorage util.UserStorage) util.UserMountsInfo {
-// 				return util.UserMountsInfo{
-// 					UserStorage_: userStorage,
-// 					MountPath:    config.Storages[userStorage.RootStorage].MountPath,
-// 					ManageServer: config.Storages[userStorage.RootStorage].StoreManageServer,
-// 					AccessServer: config.Storages[userStorage.RootStorage].StoreAccessServer,
-// 				}
-// 			}),
-// 		}, nil
-// 	}
-// 	// 0. 拿到 []UserStorage, 代表用户可以访问的多个存储集群以及子路径
-// 	// gemeni-nm:
-// 	//
-// 	//	subpath1
-// 	//	subpath2
-// 	//	subpath3
-// 	//
-// 	// gemini-sh:
-// 	//
-// 	//	subpath1
-// 	//	subpath2
-// 	//	subpath3
-
-// 	// 1. 读取配置扩展用户可以访问的目录集
-// 	userStorages = ExpandUserStorageListWithCustom(userStorages)
-
-// 	// 2. 根据配置确认每个存储的挂载路径，虚拟路径，管理员，管理员密码，管理server访问路径，数据访问路径
-// 	collectedMountInfo, err := collectMountInfo(userStorages)
-// 	if err != nil {
-// 		return err
-// 	}
-
-// 	// 3. 将合并后的目录集写入到 storemanage-server 的虚拟路径中
-// }

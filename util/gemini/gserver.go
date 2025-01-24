@@ -6,11 +6,11 @@ import (
 	"net/http"
 	"strings"
 	"telego/util"
-	"telego/util/storage_interface"
+	"telego/util/platform_interface"
 	"telego/util/yamlext"
 )
 
-var _ storage_interface.UserStorageInfoGetter = &GeminiServer{}
+var _ platform_interface.UserStorageInfoGetter = &GeminiServer{}
 
 type GeminiServer struct {
 	BaseUrl string
