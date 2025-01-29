@@ -15,15 +15,15 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ModJobMountAllUserStorageServerStruct struct{}
+type UserMountServer struct{}
 
-var ModJobMountAllUserStorageServer ModJobMountAllUserStorageServerStruct
+var ModJobMountAllUserStorageServer UserMountServer
 
-func (m ModJobMountAllUserStorageServerStruct) JobCmdName() string {
+func (m UserMountServer) JobCmdName() string {
 	return "usmnt-server"
 }
 
-func (m ModJobMountAllUserStorageServerStruct) printfUserStorageSets(userStorageSets []util.UserOneStorageSet) string {
+func (m UserMountServer) printfUserStorageSets(userStorageSets []util.UserOneStorageSet) string {
 	var builder strings.Builder
 
 	builder.WriteString("\n--------------------------------------------------\n")
@@ -39,22 +39,22 @@ func (m ModJobMountAllUserStorageServerStruct) printfUserStorageSets(userStorage
 	return builder.String()
 }
 
-func (m ModJobMountAllUserStorageServerStruct) doSftp(userStorageSets []util.UserOneStorageSet, username, password string) ([]util.UserMountsInfo, error) {
+func (m UserMountServer) doSftp(userStorageSets []util.UserOneStorageSet, username, password string) ([]util.UserMountsInfo, error) {
 	SecretConfTypeStorageViewYaml := util.SecretConfTypeStorageViewYaml{}
 	SecretConfTypeStorageViewYamlString, err := (util.MainNodeConfReader{}).ReadSecretConf(util.SecretConfTypeStorageViewYaml{})
 	if err != nil {
-		return nil, fmt.Errorf("ModJobMountAllUserStorageServerStruct.doSftp: Error ReadSecretConf: %v", err)
+		return nil, fmt.Errorf("UserMountServer.doSftp: Error ReadSecretConf: %v", err)
 	}
 	err = yamlext.UnmarshalAndValidate([]byte(SecretConfTypeStorageViewYamlString), &SecretConfTypeStorageViewYaml)
 	if err != nil {
-		return nil, fmt.Errorf("ModJobMountAllUserStorageServerStruct.doSftp: Error UnmarshalAndValidate: %v", err)
+		return nil, fmt.Errorf("UserMountServer.doSftp: Error UnmarshalAndValidate: %v", err)
 	}
 
 	userMountsInfos := make([]util.UserMountsInfo, 0)
 	for _, userStorageSet := range userStorageSets {
 		mServer, aServer, err := SecretConfTypeStorageViewYaml.GetSftpServerByType(userStorageSet.Type)
 		if err != nil {
-			return nil, fmt.Errorf("ModJobMountAllUserStorageServerStruct.doSftp: Error getSftpServerByType: %v", err)
+			return nil, fmt.Errorf("UserMountServer.doSftp: Error getSftpServerByType: %v", err)
 		}
 		userMountsInfos = append(userMountsInfos, util.UserMountsInfo{
 			UserStorage_: userStorageSet,
@@ -65,16 +65,16 @@ func (m ModJobMountAllUserStorageServerStruct) doSftp(userStorageSets []util.Use
 
 	err = util.ModSftpgo.CreateUserSpace(SecretConfTypeStorageViewYaml, username, password, userMountsInfos)
 	if err != nil {
-		return nil, fmt.Errorf("ModJobMountAllUserStorageServerStruct.doSftp: Error CreateUserSpace (userStorageSets: %s): %v", m.printfUserStorageSets(userStorageSets), err)
+		return nil, fmt.Errorf("UserMountServer.doSftp: Error CreateUserSpace (userStorageSets: %s): %v", m.printfUserStorageSets(userStorageSets), err)
 	}
 	return userMountsInfos, nil
 }
 
-func (m ModJobMountAllUserStorageServerStruct) handleGetPath(c *gin.Context) {
+func (m UserMountServer) handleGetPath(c *gin.Context) {
 	var req GetAllUserStorageLinkRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": fmt.Sprintf("ModJobMountAllUserStorageServerStruct.handleGetPath: Invalid request payload: %v", err),
+			"error": fmt.Sprintf("UserMountServer.handleGetPath: Invalid request payload: %v", err),
 		})
 		return
 	}
@@ -82,7 +82,7 @@ func (m ModJobMountAllUserStorageServerStruct) handleGetPath(c *gin.Context) {
 	gBaseUrl, err := (util.MainNodeConfReader{}).ReadSecretConf(util.SecretConfTypeGeminiAPIUrl{})
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("ModJobMountAllUserStorageServerStruct.handleGetPath: Error reading gemini url: %v", err),
+			"error": fmt.Sprintf("UserMountServer.handleGetPath: Error reading gemini url: %v", err),
 		})
 		return
 	}
@@ -91,7 +91,7 @@ func (m ModJobMountAllUserStorageServerStruct) handleGetPath(c *gin.Context) {
 	gServer, err := gemini.NewGeminiServer(gBaseUrl)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("ModJobMountAllUserStorageServerStruct.handleGetPath: Error initializing gemini server: %v", err),
+			"error": fmt.Sprintf("UserMountServer.handleGetPath: Error initializing gemini server: %v", err),
 		})
 		return
 	}
@@ -100,7 +100,7 @@ func (m ModJobMountAllUserStorageServerStruct) handleGetPath(c *gin.Context) {
 	userStorageSets, err := platform_interface.GetAllStorageByUser(gServer, req.GeminiUserInfo.Username, req.GeminiUserInfo.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("ModJobMountAllUserStorageServerStruct.handleGetPath: Error getting all storage by user (username: %s, password: %s): %v", req.GeminiUserInfo.Username, req.GeminiUserInfo.Password, err),
+			"error": fmt.Sprintf("UserMountServer.handleGetPath: Error getting all storage by user (username: %s, password: %s): %v", req.GeminiUserInfo.Username, req.GeminiUserInfo.Password, err),
 		})
 		return
 	}
@@ -109,7 +109,7 @@ func (m ModJobMountAllUserStorageServerStruct) handleGetPath(c *gin.Context) {
 	userMountInfos, err := m.doSftp(userStorageSets, req.GeminiUserInfo.Username, req.GeminiUserInfo.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("ModJobMountAllUserStorageServerStruct.handleGetPath: Error performing SFTP operations: %v", err),
+			"error": fmt.Sprintf("UserMountServer.handleGetPath: Error performing SFTP operations: %v", err),
 		})
 		return
 	}
@@ -120,7 +120,7 @@ func (m ModJobMountAllUserStorageServerStruct) handleGetPath(c *gin.Context) {
 	})
 }
 
-func (m ModJobMountAllUserStorageServerStruct) listenRequest(port int) {
+func (m UserMountServer) listenRequest(port int) {
 	r := gin.Default()
 	r.POST("/get/user/storage/link", m.handleGetPath)
 	if err := r.Run(fmt.Sprintf(":%d", port)); err != nil {
@@ -128,11 +128,11 @@ func (m ModJobMountAllUserStorageServerStruct) listenRequest(port int) {
 	}
 }
 
-func (m ModJobMountAllUserStorageServerStruct) Run() {
+func (m UserMountServer) Run() {
 	m.listenRequest(8083)
 }
 
-func (m ModJobMountAllUserStorageServerStruct) ParseJob(getAllUserStorageLinkServerCmd *cobra.Command) *cobra.Command {
+func (m UserMountServer) ParseJob(getAllUserStorageLinkServerCmd *cobra.Command) *cobra.Command {
 	getAllUserStorageLinkServerCmd.Run = func(_ *cobra.Command, _ []string) {
 		m.Run()
 	}

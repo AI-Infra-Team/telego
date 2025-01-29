@@ -20,11 +20,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
-type ModJobMountAllUserStorageStruct struct{}
+type UserMount struct{}
 
-var ModJobMountAllUserStorage ModJobMountAllUserStorageStruct
+var ModJobMountAllUserStorage UserMount
 
-func (m ModJobMountAllUserStorageStruct) JobCmdName() string {
+func (m UserMount) JobCmdName() string {
 	return "usmnt"
 }
 
@@ -38,33 +38,33 @@ type GetAllUserStorageLinkResponse struct {
 	RemoteInfos []util.UserMountsInfo `json:"remote_infos"` // 用于挂载的远程链接信息
 }
 
-func (m ModJobMountAllUserStorageStruct) inputUserLoginInfoByPlatform(platform platform_interface.Platform) (username, password string, err error) {
+func (m UserMount) inputUserLoginInfoByPlatform(platform platform_interface.Platform) (username, password string, err error) {
 	var ok bool
 	ok, username = util.StartTemporaryInputUI(
-		color.GreenString("ModJobMountAllUserStorageStruct.Run: Mount 用户存储空间需要各平台用户名"),
+		color.GreenString("UserMount.Run: Mount 用户存储空间需要各平台用户名"),
 		fmt.Sprintf("输入 %s 平台用户名", platform.GetPlatformName()),
 		"回车确认，ctrl + c 取消",
 	)
 	if !ok {
 		fmt.Println("User canceled input")
-		err = fmt.Errorf("ModJobMountAllUserStorageStruct.inputUserLoginInfo: error input")
+		err = fmt.Errorf("UserMount.inputUserLoginInfo: error input")
 		return
 	}
 
 	ok, password = util.StartTemporaryInputUI(
-		color.GreenString("ModJobMountAllUserStorageStruct.Run: Mount 用户存储空间需要各平台密码"),
+		color.GreenString("UserMount.Run: Mount 用户存储空间需要各平台密码"),
 		fmt.Sprintf("输入 %s 平台密码", platform.GetPlatformName()),
 		"回车确认，ctrl + c 取消",
 	)
 	if !ok {
 		fmt.Println("User canceled input")
-		err = fmt.Errorf("ModJobMountAllUserStorageStruct.inputUserLoginInfo: error input")
+		err = fmt.Errorf("UserMount.inputUserLoginInfo: error input")
 		return
 	}
 	return
 }
 
-func (m ModJobMountAllUserStorageStruct) getLocalRootStorage() (string, error) {
+func (m UserMount) getLocalRootStorage() (string, error) {
 	// 选定本地挂载根目录
 	ok, localRootStorage := util.StartTemporaryInputUI(
 		color.GreenString("选定本地挂载根目录"),
@@ -73,44 +73,44 @@ func (m ModJobMountAllUserStorageStruct) getLocalRootStorage() (string, error) {
 	)
 	if !ok {
 		fmt.Println("User canceled input")
-		return "", fmt.Errorf("ModJobMountAllUserStorageStruct.getLocalRootStorage: Error user keyboard input")
+		return "", fmt.Errorf("UserMount.getLocalRootStorage: Error user keyboard input")
 	}
 
 	// 对本地挂载根目录进行检验
 	if _, err := os.Stat(localRootStorage); os.IsNotExist(err) {
 		err := os.Mkdir(localRootStorage, 0755)
 		if err != nil {
-			return "", fmt.Errorf("ModJobMountAllUserStorageStruct.getLocalRootStorage: Error creating %s", localRootStorage)
+			return "", fmt.Errorf("UserMount.getLocalRootStorage: Error creating %s", localRootStorage)
 		}
 	} else {
 		// // 检查是否是文件
 		info, err := os.Stat(localRootStorage)
 		if err != nil {
-			return "", fmt.Errorf("ModJobMountAllUserStorageStruct.getLocalRootStorage: Error opening %s", localRootStorage)
+			return "", fmt.Errorf("UserMount.getLocalRootStorage: Error opening %s", localRootStorage)
 		}
 
 		if !info.IsDir() {
-			return "", fmt.Errorf("ModJobMountAllUserStorageStruct.getLocalRootStorage: %s is a file, not a directory", localRootStorage)
+			return "", fmt.Errorf("UserMount.getLocalRootStorage: %s is a file, not a directory", localRootStorage)
 		}
 
 		files, err := os.ReadDir(localRootStorage)
 		if err != nil {
-			return "", fmt.Errorf("ModJobMountAllUserStorageStruct.getLocalRootStorage: Error opening %s", localRootStorage)
+			return "", fmt.Errorf("UserMount.getLocalRootStorage: Error opening %s", localRootStorage)
 		}
 
 		if len(files) != 0 {
-			return "", fmt.Errorf("ModJobMountAllUserStorageStruct.getLocalRootStorage: %s not empty", localRootStorage)
+			return "", fmt.Errorf("UserMount.getLocalRootStorage: %s not empty", localRootStorage)
 		}
 	}
 
 	return localRootStorage, nil
 }
 
-func (m ModJobMountAllUserStorageStruct) Run() {
+func (m UserMount) Run() {
 	// 输入用户信息
 	gUsername, gPassword, err := m.inputUserLoginInfoByPlatform(platform_interface.GeminiPlatform{})
 	if err != nil {
-		fmt.Printf("ModJobMountAllUserStorageStruct.Run: %v", err)
+		fmt.Printf("UserMount.Run: %v", err)
 	}
 
 	// 初始化 http 请求
@@ -122,33 +122,33 @@ func (m ModJobMountAllUserStorageStruct) Run() {
 	}
 	reqBody, err := json.Marshal(req)
 	if err != nil {
-		fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error marshalling request: %v", err)
+		fmt.Printf("UserMount.Run: Error marshalling request: %v", err)
 	}
 
 	// 执行请求，拿到 AllUserStorageLink
 	serverUrl, err := (util.MainNodeConfReader{}).ReadPubConf(util.PubConfMountAllUserStorageServerUrl{})
 	serverUrl = strings.TrimSpace(serverUrl)
 	if err != nil {
-		fmt.Printf("ModJobMountAllUserStorageStruct.Run: Get server ip error")
+		fmt.Printf("UserMount.Run: Get server ip error")
 		return
 	}
 	client := &http.Client{Timeout: 60 * time.Second} // 设置 60 秒超时
 	httpResp, err := client.Post(util.UrlJoin(serverUrl, "/get/user/storage/link"), "application/json", bytes.NewBuffer(reqBody))
 	if err != nil {
-		fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error getting response (server_url: %s, fullUrl: %s)", serverUrl, util.UrlJoin(serverUrl, "/mount_all_user_storage_server_url"))
+		fmt.Printf("UserMount.Run: Error getting response (server_url: %s, fullUrl: %s)", serverUrl, util.UrlJoin(serverUrl, "/mount_all_user_storage_server_url"))
 		return
 	}
 	defer httpResp.Body.Close()
 	if httpResp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(httpResp.Body) // 读取错误信息
-		fmt.Printf("ModJobMountAllUserStorageStruct.Run: Unexpected status: %d, %s", httpResp.StatusCode, string(body))
+		fmt.Printf("UserMount.Run: Unexpected status: %d, %s", httpResp.StatusCode, string(body))
 		return
 	}
 	var resp GetAllUserStorageLinkResponse
 	decoder := json.NewDecoder(httpResp.Body)
 	err = decoder.Decode(&resp)
 	if err != nil {
-		fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error decoding response: %v", err)
+		fmt.Printf("UserMount.Run: Error decoding response: %v", err)
 		return
 	}
 
@@ -166,7 +166,7 @@ func (m ModJobMountAllUserStorageStruct) Run() {
 	// 用户指定本地挂载点
 	localRootStorage, err := m.getLocalRootStorage()
 	if err != nil {
-		fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error asserting local mount point: %v", err)
+		fmt.Printf("UserMount.Run: Error asserting local mount point: %v", err)
 	}
 
 	// 调用 SshFs / rclone 进行挂载
@@ -174,12 +174,12 @@ func (m ModJobMountAllUserStorageStruct) Run() {
 	if runtime.GOOS == "linux" && !(BinManagerSshFs{}).CheckInstalled() {
 		err := NewBinManager(BinManagerSshFs{}).MakeSureWith()
 		if err != nil {
-			fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error making sure sshfs: %v", err)
+			fmt.Printf("UserMount.Run: Error making sure sshfs: %v", err)
 		}
 	} else if runtime.GOOS == "windows" && (BinManagerRclone{}).CheckInstalled() {
 		err := NewBinManager(BinManagerRclone{}).MakeSureWith()
 		if err != nil {
-			fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error making sure rclone: %v", err)
+			fmt.Printf("UserMount.Run: Error making sure rclone: %v", err)
 		}
 	}
 
@@ -187,18 +187,18 @@ func (m ModJobMountAllUserStorageStruct) Run() {
 		for _, userMountInfo := range resp.RemoteInfos {
 			localSubPath := path.Join(localRootStorage, userMountInfo.UserStorage_.Type, path.Base(userMountInfo.UserStorage_.RootStorage))
 			if err := os.MkdirAll(localSubPath, 0755); err != nil {
-				fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error making local mount subpath: %v", err)
+				fmt.Printf("UserMount.Run: Error making local mount subpath: %v", err)
 			}
 			cmd := exec.Command("sshpass", "-p", req.GeminiUserInfo.Password, "sshfs", req.GeminiUserInfo.Username+"@"+userMountInfo.AccessServer+":"+path.Base(userMountInfo.UserStorage_.RootStorage), localSubPath)
 			err := cmd.Run()
 			if err != nil {
-				fmt.Printf("ModJobMountAllUserStorageStruct.Run: Error mounting: %v", err)
+				fmt.Printf("UserMount.Run: Error mounting: %v", err)
 			}
 		}
 	}
 }
 
-func (m ModJobMountAllUserStorageStruct) ParseJob(mountAllUserStorageCmd *cobra.Command) *cobra.Command {
+func (m UserMount) ParseJob(mountAllUserStorageCmd *cobra.Command) *cobra.Command {
 	mountAllUserStorageCmd.Run = func(_ *cobra.Command, _ []string) {
 		m.Run()
 	}
