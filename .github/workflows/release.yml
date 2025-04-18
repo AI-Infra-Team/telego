@@ -1,0 +1,46 @@
+name: Release TeleYard
+
+on:
+  push:
+    tags:
+      - 'v*' # 触发条件：推送版本标签 (如 v1.0.0)
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # 需要写入权限来创建release
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Go
+        uses: actions/setup-go@v3
+        with:
+          go-version: "1.22"
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: |
+          go mod tidy
+
+      - name: Build binaries
+        run: |
+          python3 1.build.py
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          files: |
+            dist/telego_windows_amd64.exe
+            dist/telego_linux_amd64
+            dist/telego_linux_arm64
+          draft: false
+          prerelease: false
+          generate_release_notes: true 
