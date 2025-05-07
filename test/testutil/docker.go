@@ -83,21 +83,21 @@ func RunSSHDocker(t *testing.T) (string, func()) {
 		t.Fatalf("容器启动超时，在 %d 次尝试后仍未就绪", maxAttempts)
 	}
 
-	// remove all systemctl listed by which systemctl
-	t.Log("RunSSHDocker 移除所有的 systemctl")
-	removeSystemctlCmd := exec.Command("docker", "exec", containerID, "bash", "-c",
-		"rm -f $(which -a systemctl) || echo 'No systemctl found'")
-	if err := RunCommand(t, removeSystemctlCmd); err != nil {
-		t.Logf("移除 systemctl 时出现警告 (可忽略): %v", err)
-	}
+	// // remove all systemctl listed by which systemctl
+	// t.Log("RunSSHDocker 移除所有的 systemctl")
+	// removeSystemctlCmd := exec.Command("docker", "exec", containerID, "bash", "-c",
+	// 	"rm -f $(which -a systemctl) || echo 'No systemctl found'")
+	// if err := RunCommand(t, removeSystemctlCmd); err != nil {
+	// 	t.Logf("移除 systemctl 时出现警告 (可忽略): %v", err)
+	// }
 
-	// 在容器内执行 Python 脚本
-	t.Log("RunSSHDocker 配置systemctl")
-	scriptCmd := exec.Command("docker", "exec", containerID,
-		"python3", "/telego/scripts/systemctl_docker.py")
-	if err := RunCommand(t, scriptCmd); err != nil {
-		t.Fatalf("执行 systemctl_docker.py 脚本失败: %v", err)
-	}
+	// // 在容器内执行 Python 脚本
+	// t.Log("RunSSHDocker 配置systemctl")
+	// scriptCmd := exec.Command("docker", "exec", containerID,
+	// 	"python3", "/telego/scripts/systemctl_docker.py")
+	// if err := RunCommand(t, scriptCmd); err != nil {
+	// 	t.Fatalf("执行 systemctl_docker.py 脚本失败: %v", err)
+	// }
 
 	// 安装SSH服务器
 	t.Log("RunSSHDocker 安装SSH服务器、sudo")
@@ -131,6 +131,14 @@ func RunSSHDocker(t *testing.T) (string, func()) {
 			"/usr/sbin/sshd")
 	if err := RunCommand(t, configSSHCmd); err != nil {
 		t.Fatalf("配置SSH服务器失败: %v", err)
+	}
+
+	// run /telego/scripts/setup_mock_systemctl.py
+	t.Log("RunSSHDocker 配置mock_systemctl")
+	setupMockSystemctlCmd := exec.Command("docker", "exec", containerID,
+		"python3", "/telego/scripts/setup_mock_systemctl.py")
+	if err := RunCommand(t, setupMockSystemctlCmd); err != nil {
+		t.Fatalf("配置mock_systemctl失败: %v", err)
 	}
 
 	// 检查 PATH 环境变量
