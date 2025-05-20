@@ -28,8 +28,10 @@ func DeploymentPrepare(project string, deployment *Deployment) error {
 		if *item.Image != "" {
 			// prepare image
 			fmt.Printf("Preparing image: %s\n", *item.Image)
-			ModJobImgPrepare.PrepareImages([]string{*item.Image})
-
+			err := ModJobImgPrepare.PrepareImages([]string{*item.Image})
+			if err != nil {
+				return fmt.Errorf("failed to prepare image %s: %w", *item.Image, err)
+			}
 		} else if item.Pyscript != nil && *item.Pyscript != "" {
 			err := DeploymentPreparePyscript(path.Join(ConfigLoad().ProjectDir, project), &item)
 			if err != nil {
@@ -110,13 +112,13 @@ func DeploymentPreparePyscript(prjdir string, item *DeploymentPrepareItem) error
 
 func DeploymentPrepareUrl(prjdir string, item *DeploymentPrepareItem) error {
 	util.PrintStep("prepare url", fmt.Sprintf("Downloading file from URL: %s", *item.URL))
-	
+
 	// download to download_cache
 	// downloadCachePath := path.Join(PrepareCacheDir, filepath.Base(*item.URL))
 	prjcachedir := path.Join(prjdir, PrepareCacheDir)
 	downloadCachePath := path.Join(prjcachedir, filepath.Base(*item.URL))
 	if _, err := os.Stat(downloadCachePath); err != nil {
-	err := util.DownloadFile(*item.URL, downloadCachePath)
+		err := util.DownloadFile(*item.URL, downloadCachePath)
 		if err != nil {
 			// fmt.Println(color.RedString("Failed to download file from %s\n   err: %v", *item.URL, err))
 			return fmt.Errorf("failed to download file from %s: %w", *item.URL, err)

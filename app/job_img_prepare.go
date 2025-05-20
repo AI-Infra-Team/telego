@@ -38,6 +38,8 @@ func (m *ModJobImgPrepareStruct) ParseJob(ImgPrepareCmd *cobra.Command) *cobra.C
 // allow fail
 // with print
 func (m *ModJobImgPrepareStruct) PrepareImages(imagesWithTag []string) error {
+
+	util.PrintStep("ImgPrepare", fmt.Sprintf("preparing images: %v", imagesWithTag))
 	// check format
 	for _, imageWithTag := range imagesWithTag {
 		if !util.FmtCheck.CheckImagePath(imageWithTag) {
@@ -93,7 +95,7 @@ func (m *ModJobImgPrepareStruct) PrepareImages(imagesWithTag []string) error {
 			}
 
 			if _, err := util.ModRunCmd.ShowProgress(pullCommand[0], pullCommand[1:]...).BlockRun(); err != nil {
-				fmt.Printf("Error downloading image: %v\n", err)
+				fmt.Printf("Error downloading image, cmd: %v, err: %v\n", pullCommand, err)
 				continue
 			}
 
