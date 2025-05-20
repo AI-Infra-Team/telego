@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"strings"
 
 	"telego/util"
 
@@ -81,12 +82,24 @@ func (_ ModJobApplyStruct) applyLocal(job ApplyJob) {
 		}
 	}
 	for i, helmDir := range job.HelmDirs {
+		config := ""
+		if strings.Contains(helmDir, ",") {
+			// split helm dir and overwrite config with ,
+			split := strings.Split(helmDir, ",")
+			helmDir = split[0]
+			config = split[1]
+		}
 		helmNs := job.HelmNamespaces[i]
 		helm := path.Base(helmDir)
 		helmCmds := []string{"helm", "install", helm, helmDir, "--kube-context", job.ClusterContext}
 		if helmNs != "" {
 			helmCmds = append(helmCmds, "--namespace", helmNs)
 		}
+		// config is a file path
+		if config != "" {
+			helmCmds = append(helmCmds, "-f", config)
+		}
+
 		_, err := util.ModRunCmd.ShowProgress(helmCmds[0], helmCmds[1:]...).BlockRun()
 		if err != nil {
 			helmCmds[1] = "upgrade"
@@ -123,7 +136,11 @@ func (m ModJobApplyStruct) NewApplyCmd(
 		}
 	}
 	for _, helm := range helms {
-		cmds = append(cmds, "--helm", *helm.HelmDir)
+		if helm.OverwriteConfig != nil && *helm.OverwriteConfig != "" {
+			cmds = append(cmds, "--helm", *helm.HelmDir+","+*helm.OverwriteConfig)
+		} else {
+			cmds = append(cmds, "--helm", *helm.HelmDir)
+		}
 		if helm.Namespace != nil && *helm.Namespace != "" {
 			cmds = append(cmds, "--helm-ns", *helm.Namespace)
 		} else {

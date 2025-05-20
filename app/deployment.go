@@ -229,6 +229,7 @@ func (d *DeploymentYaml) Verify(prjName string, prjDir string, yml []byte, skipR
 	}
 
 	//replace all string with value
+	// allow nil ptr
 	replaceWithValue := func(s *string) {
 		if s == nil {
 			return
@@ -251,6 +252,7 @@ func (d *DeploymentYaml) Verify(prjName string, prjDir string, yml []byte, skipR
 	for _, s := range dply.Helms {
 		replaceWithValue(s.HelmDir)
 		replaceWithValue(s.Namespace)
+		replaceWithValue(s.OverwriteConfig)
 	}
 	for _, s := range dply.Prepare {
 		replaceWithValue(s.As)
@@ -461,8 +463,9 @@ func (dfm *DeploymentFileMap) WriteToFile() error {
 
 // DeploymentHelm represents a helm chart configuration.
 type DeploymentHelm struct {
-	HelmDir   *string `yaml:"helm-dir"`
-	Namespace *string `yaml:"namespace"`
+	HelmDir         *string `yaml:"helm-dir"`
+	Namespace       *string `yaml:"namespace"`
+	OverwriteConfig *string `yaml:"overwrite-config,omitempty"`
 }
 
 // DeploymentK8s represents a Kubernetes configuration.
