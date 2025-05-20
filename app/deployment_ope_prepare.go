@@ -124,7 +124,7 @@ func DeploymentPrepareUrl(prjdir string, item *DeploymentPrepareItem) error {
 			return fmt.Errorf("failed to download file from %s: %w", *item.URL, err)
 		}
 	}
-	return DeploymentPrepareHandleCached(item, prjcachedir)
+	return DeploymentPrepareHandleCached(item, downloadCachePath)
 }
 
 func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, downloadCachePath string) error {
@@ -161,7 +161,14 @@ func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, downloadCachePat
 						newSrc := path.Join(path.Dir(src), path.Base(dest))
 						err := os.Rename(src, newSrc)
 						if err != nil {
-							return fmt.Errorf("failed to rename %s to %s: %w", src, dest, err)
+							filetree, err := util.GetFileTree(10, "extract")
+							filetreeStr := ""
+							if err != nil {
+								filetreeStr = fmt.Sprintf("get filetree failed %v", err)
+							} else {
+								filetreeStr = filetree.GetDebugStr()
+							}
+							return fmt.Errorf("failed to rename %s to %s: %w, filetree in extract: \n%s", src, dest, err, filetreeStr)
 						}
 
 						util.ModRunCmd.CopyDirContentOrFileTo(newSrc, path.Dir(dest))

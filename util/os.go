@@ -7,6 +7,8 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"sort"
+	"strings"
 	"time"
 
 	"encoding/base64"
@@ -202,4 +204,225 @@ func GetCurrentUser() string {
 		return "adminuser"
 	}
 	return currentUser.Username
+}
+
+// FileNode 表示文件树中的一个节点
+type FileNode struct {
+	Name     string               // 文件或目录名
+	Path     string               // 完整路径
+	IsDir    bool                 // 是否为目录
+	IsLink   bool                 // 是否为符号链接
+	LinkTo   string               // 如果是链接，指向的目标路径
+	Children map[string]*FileNode // 子文件/目录
+}
+
+// FileTreeStruct 表示文件树结构
+type FileTreeStruct struct {
+	Root         *FileNode       // 根节点
+	MaxDepth     int             // 最大递归深度
+	VisitedPaths map[string]bool // 已访问的路径，防止循环引用
+}
+
+// GetFileTree 获取指定目录的文件树
+// depth: 递归深度，0 表示不限制深度
+// startPath: 起始目录路径，默认为当前目录
+func GetFileTree(depth int, startPath ...string) (*FileTreeStruct, error) {
+	// 确定起始路径
+	path := CurDir()
+	if len(startPath) > 0 && startPath[0] != "" {
+		path = startPath[0]
+	}
+
+	// 获取绝对路径
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return nil, fmt.Errorf("获取绝对路径失败: %w", err)
+	}
+
+	// 创建文件树结构
+	tree := &FileTreeStruct{
+		MaxDepth:     depth,
+		VisitedPaths: make(map[string]bool),
+	}
+
+	// 检查路径是否存在
+	info, err := os.Lstat(absPath)
+	if err != nil {
+		return nil, fmt.Errorf("获取路径信息失败: %w", err)
+	}
+
+	// 创建根节点
+	isLink := info.Mode()&os.ModeSymlink != 0
+	linkTo := ""
+	if isLink {
+		linkTo, err = os.Readlink(absPath)
+		if err != nil {
+			return nil, fmt.Errorf("读取链接目标失败: %w", err)
+		}
+
+		// 如果是相对路径，转换为绝对路径
+		if !filepath.IsAbs(linkTo) {
+			linkTo = filepath.Join(filepath.Dir(absPath), linkTo)
+		}
+	}
+
+	isDir := info.IsDir()
+	// 如果是链接，检查目标是否为目录
+	if isLink {
+		targetInfo, err := os.Stat(absPath) // 使用Stat会跟随链接
+		if err == nil {
+			isDir = targetInfo.IsDir()
+		}
+	}
+
+	root := &FileNode{
+		Name:     filepath.Base(absPath),
+		Path:     absPath,
+		IsDir:    isDir,
+		IsLink:   isLink,
+		LinkTo:   linkTo,
+		Children: make(map[string]*FileNode),
+	}
+	tree.Root = root
+
+	// 如果是目录，递归构建文件树
+	if isDir {
+		err = tree.buildTree(root, 0)
+		if err != nil {
+			return nil, fmt.Errorf("构建文件树失败: %w", err)
+		}
+	}
+
+	return tree, nil
+}
+
+// buildTree 递归构建文件树
+func (ft *FileTreeStruct) buildTree(node *FileNode, currentDepth int) error {
+	// 检查是否超过最大深度
+	if ft.MaxDepth > 0 && currentDepth >= ft.MaxDepth {
+		return nil
+	}
+
+	// 标记当前路径为已访问
+	ft.VisitedPaths[node.Path] = true
+
+	// 获取目录内容
+	var readPath string
+	if node.IsLink {
+		readPath = node.LinkTo
+	} else {
+		readPath = node.Path
+	}
+
+	entries, err := os.ReadDir(readPath)
+	if err != nil {
+		return fmt.Errorf("读取目录失败 %s: %w", readPath, err)
+	}
+
+	// 遍历目录内容
+	for _, entry := range entries {
+		childName := entry.Name()
+		childPath := filepath.Join(node.Path, childName)
+
+		// 获取文件信息，不跟随链接
+		info, err := os.Lstat(childPath)
+		if err != nil {
+			// 忽略无法访问的文件
+			continue
+		}
+
+		isLink := info.Mode()&os.ModeSymlink != 0
+		linkTo := ""
+		if isLink {
+			linkTo, err = os.Readlink(childPath)
+			if err != nil {
+				// 忽略无法读取的链接
+				continue
+			}
+
+			// 如果是相对路径，转换为绝对路径
+			if !filepath.IsAbs(linkTo) {
+				linkTo = filepath.Join(filepath.Dir(childPath), linkTo)
+			}
+		}
+
+		isDir := entry.IsDir()
+		// 如果是链接，尝试判断目标是否为目录
+		if isLink {
+			targetInfo, err := os.Stat(childPath) // 使用Stat跟随链接
+			if err == nil {
+				isDir = targetInfo.IsDir()
+			}
+		}
+
+		childNode := &FileNode{
+			Name:     childName,
+			Path:     childPath,
+			IsDir:    isDir,
+			IsLink:   isLink,
+			LinkTo:   linkTo,
+			Children: make(map[string]*FileNode),
+		}
+		node.Children[childName] = childNode
+
+		// 如果是目录并且还没被访问过，递归处理
+		if isDir {
+			// 如果是链接，检查目标路径是否已访问，防止循环
+			pathToCheck := childNode.Path
+			if isLink {
+				pathToCheck = linkTo
+			}
+
+			if !ft.VisitedPaths[pathToCheck] {
+				err = ft.buildTree(childNode, currentDepth+1)
+				if err != nil {
+					// 忽略子目录的错误，继续处理其他条目
+					continue
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+// GetDebugStr 获取文件树的字符串表示，便于调试或记录
+func (ft *FileTreeStruct) GetDebugStr() string {
+	var builder strings.Builder
+	getNodeString(ft.Root, 0, &builder)
+	return builder.String()
+}
+
+// 辅助函数用于递归构建节点字符串
+func getNodeString(node *FileNode, depth int, builder *strings.Builder) {
+	indent := strings.Repeat("  ", depth)
+	nodeType := "文件"
+	if node.IsDir {
+		nodeType = "目录"
+	}
+	if node.IsLink {
+		if node.IsDir {
+			nodeType = fmt.Sprintf("链接(->目录: %s)", node.LinkTo)
+		} else {
+			nodeType = fmt.Sprintf("链接(->文件: %s)", node.LinkTo)
+		}
+	}
+
+	builder.WriteString(fmt.Sprintf("%s%s [%s]\n", indent, node.Name, nodeType))
+
+	// 按字母顺序排序子节点，使输出更有序
+	var names []string
+	for name := range node.Children {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, name := range names {
+		getNodeString(node.Children[name], depth+1, builder)
+	}
+}
+
+// PrintTree 打印文件树结构，便于调试
+func (ft *FileTreeStruct) PrintTree() {
+	fmt.Print(ft.GetDebugStr())
 }
