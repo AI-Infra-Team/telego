@@ -66,6 +66,12 @@ func getChecksums() (map[string]string, error) {
 }
 
 func needUpgrade() (bool, error) {
+
+	// skip if contains NO_UPGRADE env
+	if os.Getenv("NO_UPGRADE") == "true" {
+		return false, nil
+	}
+
 	thisProcBinary, err := os.Executable()
 	if err != nil {
 		fmt.Printf("get this binary err: %v", err)

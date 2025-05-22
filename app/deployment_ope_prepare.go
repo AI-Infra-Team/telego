@@ -5,6 +5,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 	"telego/util"
 
 	"github.com/fatih/color"
@@ -23,7 +24,7 @@ func DeploymentPrepare(project string, deployment *Deployment) error {
 	// Step2: Process prepare items
 	// fmt.Printf("yml mapped as %v", deployment)
 	// os.Chdir("prepare")
-	for _, item := range deployment.Prepare {
+	for idx, item := range deployment.Prepare {
 		fmt.Println()
 		if *item.Image != "" {
 			// prepare image
@@ -47,6 +48,13 @@ func DeploymentPrepare(project string, deployment *Deployment) error {
 			if err != nil {
 				fmt.Println(color.RedString("filemap write failed %v", err))
 			}
+		} else if *item.Git != "" {
+			err := DeploymentPrepareGit(path.Join(ConfigLoad().ProjectDir, project), &item)
+			if err != nil {
+				return fmt.Errorf("failed to prepare git %s: %w", *item.Git, err)
+			}
+		} else {
+			fmt.Println(color.YellowString("invalid prepare item found at idx:%d", idx))
 		}
 
 		// if item.FileMap != nil {
@@ -125,6 +133,69 @@ func DeploymentPrepareUrl(prjdir string, item *DeploymentPrepareItem) error {
 		}
 	}
 	return DeploymentPrepareHandleCached(item, downloadCachePath)
+}
+
+func DeploymentPrepareGit(prjdir string, item *DeploymentPrepareItem) error {
+	// maybe split with :
+	heads := []string{"http://", "https://", "git://", "git@"}
+	giturl := *item.Git
+	giturlWithoutHead := *item.Git
+	for _, head := range heads {
+		// replace head with ""
+		giturlWithoutHead = strings.Replace(giturlWithoutHead, head, "", 1)
+	}
+	// maybe split branch with :
+	branch := ""
+	if strings.Contains(giturlWithoutHead, ":") {
+		// giturl = strings.Split(giturlWithoutHead, ":")[0]
+		branch = strings.Split(giturlWithoutHead, ":")[1]
+		giturl = strings.ReplaceAll(*item.Git, ":"+branch, "")
+	}
+
+	util.PrintStep("prepare git", fmt.Sprintf("Downloading git prj from URL: %s, branch: %s", giturl, branch))
+	cloneAtDir := path.Join(prjdir, PrepareCacheDir)
+	// mk dir all
+	err := os.MkdirAll(cloneAtDir, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+
+	cloneTargetName := filepath.Base(giturl)
+	// remove end .git
+	cloneTargetName = strings.TrimSuffix(cloneTargetName, ".git")
+
+	// check exsit
+	if _, err := os.Stat(path.Join(cloneAtDir, cloneTargetName)); err != nil {
+		// clone
+		_, err = util.ModRunCmd.NewBuilder("git", "clone", giturl, cloneTargetName).
+			SetDir(cloneAtDir).ShowProgress().BlockRun()
+		if err != nil {
+			return fmt.Errorf("failed to clone git prj, giturl: %s, err: %w", giturl, err)
+		}
+	}
+
+	// checkout branch
+	if branch != "" {
+		_, err = util.ModRunCmd.NewBuilder("git", "checkout", branch).
+			SetDir(path.Join(cloneAtDir, cloneTargetName)).ShowProgress().BlockRun()
+		if err != nil {
+			return fmt.Errorf("failed to checkout branch: %w", err)
+		}
+	}
+
+	// after clone, archive to prjdir/teledeploy/git_prj_name.tar.gz
+	tarPath := path.Join(prjdir, "teledeploy", fmt.Sprintf("%s.tar.gz", cloneTargetName))
+	// remove old tar
+	os.RemoveAll(tarPath)
+	err = archiver.Archive([]string{path.Join(cloneAtDir, cloneTargetName)}, tarPath)
+	if err != nil {
+		return fmt.Errorf("failed to archive git repo: %w", err)
+	}
+
+	util.PrintStep("prepare git", fmt.Sprintf("Archive git repo to %s, fetch it by fileserver/%s/%s.tar.gz",
+		tarPath, path.Base(prjdir), cloneTargetName))
+
+	return nil
 }
 
 func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, downloadCachePath string) error {

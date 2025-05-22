@@ -81,6 +81,14 @@ func (_ ModJobApplyStruct) applyLocal(job ApplyJob) {
 			errs = append(errs, err)
 		}
 	}
+
+	if len(job.HelmDirs) != 0 {
+		if err := NewBinManager(BinManagerHelm{}).MakeSureWith(); err != nil {
+			fmt.Println(color.RedString("Error in compatible with helm: %v", err))
+			os.Exit(1)
+		}
+	}
+
 	for i, helmDir := range job.HelmDirs {
 		config := ""
 		if strings.Contains(helmDir, ",") {
@@ -102,10 +110,12 @@ func (_ ModJobApplyStruct) applyLocal(job ApplyJob) {
 
 		_, err := util.ModRunCmd.ShowProgress(helmCmds[0], helmCmds[1:]...).BlockRun()
 		if err != nil {
+			fmt.Println(color.RedString("helm install failed, cmd:%v,dir:%s, will retry with upgrade", helmCmds, helmDir))
+
 			helmCmds[1] = "upgrade"
 			_, err := util.ModRunCmd.ShowProgress(helmCmds[0], helmCmds[1:]...).BlockRun()
 			if err != nil {
-				fmt.Println(color.RedString("helm install/upgrade failed, dir:%s", helmDir))
+				fmt.Println(color.RedString("helm install/upgrade failed, cmd:%v,dir:%s", helmCmds, helmDir))
 				// return
 				errs = append(errs, err)
 			}
@@ -114,6 +124,7 @@ func (_ ModJobApplyStruct) applyLocal(job ApplyJob) {
 
 	if len(errs) != 0 {
 		fmt.Println(color.RedString("Apply failed with, errs: %v", errs))
+		os.Exit(1)
 	} else {
 		fmt.Println(color.GreenString("Applyed %s", job.Project))
 	}

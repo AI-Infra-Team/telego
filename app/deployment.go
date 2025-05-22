@@ -258,6 +258,7 @@ func (d *DeploymentYaml) Verify(prjName string, prjDir string, yml []byte, skipR
 		replaceWithValue(s.As)
 		replaceWithValue(s.Image)
 		replaceWithValue(s.URL)
+		replaceWithValue(s.Git)
 		replaceWithValue(s.Pyscript)
 		if s.FileMap != nil {
 			replaceWithValue(s.FileMap.Content)
@@ -282,6 +283,7 @@ func (d *DeploymentYaml) Verify(prjName string, prjDir string, yml []byte, skipR
 type DeploymentPrepareItemYaml struct {
 	Image    string             `yaml:"image,omitempty"`
 	URL      string             `yaml:"url,omitempty"`
+	Git      string             `yaml:"git,omitempty"`
 	As       string             `yaml:"as,omitempty"`
 	FileMap  *DeploymentFileMap `yaml:"filemap,omitempty"`
 	Trans    []interface{}      `yaml:"trans,omitempty"`
@@ -293,6 +295,7 @@ type DeploymentPrepareItem struct {
 	URL      *string
 	As       *string
 	Pyscript *string
+	Git      *string
 	FileMap  *DeploymentFileMap
 	Trans    []DeploymentTransform
 }
@@ -300,27 +303,32 @@ type DeploymentPrepareItem struct {
 var _ util.Conv[util.Empty, *DeploymentPrepareItem] = &DeploymentPrepareItemYaml{}
 
 func (i *DeploymentPrepareItemYaml) To(util.Empty) (*DeploymentPrepareItem, error) {
-	count := 0
+	// count := 0
+	appearedPrepareTypes := []string{}
 	if i.Image != "" {
-		count++
+		appearedPrepareTypes = append(appearedPrepareTypes, "image")
 	}
 	if i.URL != "" {
-		count++
+		appearedPrepareTypes = append(appearedPrepareTypes, "url")
+	}
+	if i.Git != "" {
+		appearedPrepareTypes = append(appearedPrepareTypes, "git")
 	}
 	if i.FileMap != nil {
-		count++
+		appearedPrepareTypes = append(appearedPrepareTypes, "filemap")
 	}
 	if i.Pyscript != "" {
-		count++
+		appearedPrepareTypes = append(appearedPrepareTypes, "pyscript")
 	}
 
-	if count != 1 {
-		return nil, fmt.Errorf("only one of image/url/filemap/pyscript can be specified")
+	if len(appearedPrepareTypes) != 1 {
+		return nil, fmt.Errorf("config conflict with %v, only one of image/url/git/filemap/pyscript can be specified", appearedPrepareTypes)
 	}
 	item := &DeploymentPrepareItem{
 		Image:    StrPtr(i.Image),
 		URL:      StrPtr(i.URL),
 		As:       StrPtr(i.As),
+		Git:      StrPtr(i.Git),
 		FileMap:  i.FileMap,
 		Trans:    []DeploymentTransform{},
 		Pyscript: StrPtr(i.Pyscript),

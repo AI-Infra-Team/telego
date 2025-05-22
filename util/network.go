@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"math/rand"
 	"mime/multipart"
 	"net"
 	"net/http"
@@ -26,7 +27,7 @@ type RequestConfig struct {
 }
 
 // 默认配置常量
-const defaultTimeout = 5 * time.Second
+const defaultTimeout = 10 * time.Second
 
 // CheckURLAccessibilityBuilder 模式实现
 type CheckURLAccessibilityBuilder struct {
@@ -61,6 +62,8 @@ func (b *CheckURLAccessibilityBuilder) CheckAccessibility() error {
 
 	for i := 0; i < 3; i++ {
 		go func() {
+			randomSleepMs := rand.Intn(2000)
+			time.Sleep(time.Duration(randomSleepMs) * time.Millisecond)
 			client := http.Client{Timeout: b.config.Timeout}
 			resp, err := client.Head(b.config.URL)
 			if err != nil {

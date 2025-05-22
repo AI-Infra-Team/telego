@@ -6,6 +6,7 @@ import (
 	"os"
 	"path"
 	"strings"
+	"sync"
 	"telego/util/yamlext"
 
 	"github.com/fatih/color"
@@ -407,15 +408,17 @@ type cacheFileServerAccessibleStruct struct {
 }
 
 var cacheFileServerAccessible *cacheFileServerAccessibleStruct
+var cacheFileServerAccessibleOnce sync.Once
 
 func FileServerAccessible() bool {
-	if cacheFileServerAccessible == nil {
+	// if cacheFileServerAccessible == nil {
+	cacheFileServerAccessibleOnce.Do(func() {
 		cacheFileServerAccessible = &cacheFileServerAccessibleStruct{
 			accessible: NewCheckURLAccessibilityBuilder().
 				SetURL("http://"+MainNodeIp+":8003").
 				CheckAccessibility() == nil,
 		}
-	}
+	})
 
 	return cacheFileServerAccessible.accessible
 }
