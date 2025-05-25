@@ -110,7 +110,7 @@ func DeploymentPreparePyscript(prjdir string, item *DeploymentPrepareItem) error
 	if err != nil {
 		return fmt.Errorf("failed to run pyscript %s: %w", *item.Pyscript, err)
 	}
-	err = DeploymentPrepareHandleCached(item, prjcachedir)
+	err = DeploymentPrepareHandleCached(item, prjcachedir, "prepare_py_script has no src file")
 	if err != nil {
 		return fmt.Errorf("failed to handle cached: %w", err)
 	}
@@ -132,7 +132,7 @@ func DeploymentPrepareUrl(prjdir string, item *DeploymentPrepareItem) error {
 			return fmt.Errorf("failed to download file from %s: %w", *item.URL, err)
 		}
 	}
-	return DeploymentPrepareHandleCached(item, downloadCachePath)
+	return DeploymentPrepareHandleCached(item, prjcachedir, filepath.Base(*item.URL))
 }
 
 func DeploymentPrepareGit(prjdir string, item *DeploymentPrepareItem) error {
@@ -198,8 +198,8 @@ func DeploymentPrepareGit(prjdir string, item *DeploymentPrepareItem) error {
 	return nil
 }
 
-func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, downloadCachePath string) error {
-	_, err := os.Stat(downloadCachePath)
+func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, downloadCacheDir string, srcFileName string) error {
+	_, err := os.Stat(downloadCacheDir)
 	if err == nil {
 		// Execute "trans" command if provided
 		if len(item.Trans) > 0 {
@@ -208,22 +208,25 @@ func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, downloadCachePat
 			for _, step := range item.Trans {
 				switch step := step.(type) {
 				case DeploymentTransformExtract:
+					toExtract := path.Join(downloadCacheDir, srcFileName)
 					extractAppeared = true
 					os.RemoveAll("extract")
-					fmt.Println(color.BlueString("Extracting file: %s", downloadCachePath))
+					fmt.Println(color.BlueString("Extracting file: %s", toExtract))
 					err := os.MkdirAll("extract", 0755)
 					if err != nil {
 						return fmt.Errorf("failed to create directory: %w", err)
 					}
-					err = archiver.Unarchive(downloadCachePath, "extract")
+					err = archiver.Unarchive(toExtract, "extract")
 					if err != nil {
 						return fmt.Errorf("failed to extract file: %w", err)
 					}
 				case DeploymentTransformCopy:
 					for _, copyStep := range step.Copy {
 						src := path.Join("extract", *copyStep.from)
+
+						// no extect before copy, we just copy the file from downloadCacheDir
 						if !extractAppeared {
-							src = path.Join(downloadCachePath, *copyStep.from)
+							src = path.Join(downloadCacheDir, *copyStep.from)
 						}
 
 						dest := *copyStep.to
@@ -254,8 +257,9 @@ func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, downloadCachePat
 			// 	return fmt.Errorf("failed to execute transformation %s: %w", item.Trans, err)
 			// }
 		} else if *item.As != "" {
-			util.ModRunCmd.CopyDirContentOrFileTo(downloadCachePath, path.Dir(*item.As))
-			src := path.Join(path.Dir(*item.As), path.Base(downloadCachePath))
+			copySrc := path.Join(downloadCacheDir, srcFileName)
+			util.ModRunCmd.CopyDirContentOrFileTo(copySrc, path.Dir(*item.As))
+			src := path.Join(path.Dir(*item.As), path.Base(copySrc))
 			dest := *item.As
 			err := os.Rename(src, dest)
 			if err != nil {
