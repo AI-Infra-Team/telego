@@ -167,22 +167,22 @@ func DownloadFile(url, filename string) error {
 		"Downloading",
 	)
 
-	// 自定义 HTTP 客户端，设置 5 秒超时
+	// 自定义 HTTP 客户端，设置更长的超时时间
 	client := &http.Client{
 		Transport: &http.Transport{
 			Proxy: http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
+				Timeout:   60 * time.Second, // 连接超时从30s增加到60s
+				KeepAlive: 60 * time.Second, // 保持连接时间从30s增加到60s
 			}).DialContext,
 			ForceAttemptHTTP2:     true,
 			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-			ResponseHeaderTimeout: 5 * time.Second,
+			IdleConnTimeout:       180 * time.Second, // 空闲连接超时从90s增加到180s
+			TLSHandshakeTimeout:   30 * time.Second,  // TLS握手超时从10s增加到30s
+			ExpectContinueTimeout: 10 * time.Second,  // Expect: 100-continue超时从1s增加到5s
+			ResponseHeaderTimeout: 30 * time.Second,  // 响应头超时从5s增加到30s
 		},
-		Timeout: 180 * time.Second, // 取消默认的请求超时，保持默认的行为
+		Timeout: 1800 * time.Second, // 总超时时间从180s增加到1800s(30分钟)
 	}
 
 	// 创建 HTTP 请求
