@@ -2,7 +2,6 @@ package test3_main_node_config
 
 import (
 	"os/exec"
-	"path"
 	"path/filepath"
 	"telego/test/testutil"
 	"telego/util"
@@ -13,7 +12,7 @@ func TestSSHKeyGeneration(t *testing.T) {
 	projectRoot := testutil.GetProjectRoot(t)
 
 	// copy compiled telego to /usr/bin/telego
-	distPath := path.Join(projectRoot, "dist/telego_linux_"+util.GetCurrentArch())
+	distPath := filepath.Join(projectRoot, "dist/telego_linux_"+util.GetCurrentArch())
 	_, err := util.ModRunCmd.NewBuilder("cp", distPath, "/usr/bin/telego").BlockRun()
 	if err != nil {
 		t.Fatalf("复制telego失败: %v", err)

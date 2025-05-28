@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"telego/util"
 
@@ -50,8 +50,8 @@ func (m *ModJobImgPrepareStruct) PrepareImages(imagesWithTag []string) error {
 		curDir := util.CurDir()
 		defer os.Chdir(curDir)
 
-		os.MkdirAll(path.Join(ConfigLoad().ProjectDir, "container_image"), 0755)
-		os.Chdir(path.Join(ConfigLoad().ProjectDir, "container_image"))
+		os.MkdirAll(filepath.Join(ConfigLoad().ProjectDir, "container_image"), 0755)
+		os.Chdir(filepath.Join(ConfigLoad().ProjectDir, "container_image"))
 
 		// 定义可用的平台
 		availablePlatforms := []string{

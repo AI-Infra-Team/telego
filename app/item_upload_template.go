@@ -21,7 +21,7 @@ func (i *MenuItem) EnterItemUploadTemplate() DispatchExecRes {
 				fmt.Println(color.RedString("Upload template error: %s", err))
 			}
 
-			localPath := path.Join(path.Dir(filepath.ToSlash(ConfigLoad().ProjectDir)), "telego/teleyard-template")
+			localPath := filepath.Join(path.Dir(filepath.ToSlash(ConfigLoad().ProjectDir)), "telego/teleyard-template")
 
 			err = os.RemoveAll("teleyard-template.zip")
 			if err != nil {

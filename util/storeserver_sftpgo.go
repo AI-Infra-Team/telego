@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -117,7 +117,7 @@ func (ModSftpgoStruct) sftpgoRegisterHostDir(userName, storeName, server, mountP
 	folderPayload := SftpgoFolderPayload{
 		ID:             0,
 		Name:           userName + "@" + storeName + ":" + strings.ReplaceAll(mountPath, "/", ":"),
-		MappedPath:     mountPath, //path.Join("/share", tempDir), // the host path
+		MappedPath:     mountPath, //filepath.Join("/share", tempDir), // the host path
 		Description:    "",
 		UsedQuotaSize:  0,
 		UsedQuotaFiles: 0,
@@ -193,7 +193,7 @@ func (m ModSftpgoStruct) sftpgoCreateUser(server, userName, userPassword string,
 		Username:    userName,
 		Password:    userPassword,
 		HasPassword: true,
-		HomeDir:     "", //path.Join(store.RootStorage, store.SubPaths[0]),
+		HomeDir:     "", //filepath.Join(store.RootStorage, store.SubPaths[0]),
 		UID:         0,
 		GID:         0,
 		MaxSessions: 0,
@@ -377,9 +377,9 @@ func (m ModSftpgoStruct) CreateUserSpace(config SecretConfTypeStorageViewYaml,
 		rootFolder := userMountsInfo.UserStorage_.RootStorage
 		for _, subpath := range userMountsInfo.UserStorage_.SubPaths {
 			fmt.Println()
-			fmt.Println(color.GreenString("register host dir %s for user %s", path.Join(rootFolder, subpath), UserName))
+			fmt.Println(color.GreenString("register host dir %s for user %s", filepath.Join(rootFolder, subpath), UserName))
 			checkSubPathExist := func(subpath string) bool {
-				fmt.Println(color.GreenString("check subpath exist %s", path.Join(rootFolder, subpath)))
+				fmt.Println(color.GreenString("check subpath exist %s", filepath.Join(rootFolder, subpath)))
 
 				if UserName != config.StoreManageAdmin+"_specforcheck" && !funk.Contains(eachServerRootFoldersAndSsh[userMountsInfo.ManageServer].rootFolders, rootFolder) {
 					fmt.Println(color.RedString("root folder (%s) not in eachServerRootFoldersAndSsh (%+v)",
@@ -388,11 +388,11 @@ func (m ModSftpgoStruct) CreateUserSpace(config SecretConfTypeStorageViewYaml,
 				}
 				sshAddr := eachServerRootFoldersAndSsh[userMountsInfo.ManageServer].sshAddr
 				// use rclone to check
-				res := RcloneCheckDirExist(base64.RawURLEncoding.EncodeToString([]byte(sshAddr)) + ":" + path.Join(rootFolder, subpath))
+				res := RcloneCheckDirExist(base64.RawURLEncoding.EncodeToString([]byte(sshAddr)) + ":" + filepath.Join(rootFolder, subpath))
 				if !res {
 					fmt.Println(color.RedString("subpath not exist"))
 				} else {
-					fmt.Println(color.GreenString("check subpath exist %s result %+v", path.Join(rootFolder, subpath), res))
+					fmt.Println(color.GreenString("check subpath exist %s result %+v", filepath.Join(rootFolder, subpath), res))
 				}
 
 				return res
@@ -405,7 +405,7 @@ func (m ModSftpgoStruct) CreateUserSpace(config SecretConfTypeStorageViewYaml,
 			folder, err := m.sftpgoRegisterHostDir(UserName,
 				userMountsInfo.UserStorage_.RootStorage,
 				userMountsInfo.ManageServer,
-				path.Join(userMountsInfo.UserStorage_.RootStorage, subpath),
+				filepath.Join(userMountsInfo.UserStorage_.RootStorage, subpath),
 				authResp)
 			if err != nil {
 				return err
@@ -431,7 +431,7 @@ func (m ModSftpgoStruct) CreateUserSpace(config SecretConfTypeStorageViewYaml,
 			return folder.V1
 		}).([]SftpgoFolderPayload)
 		virtualFolders := funk.Map(folders_userStorage_authResp.folders, func(folder tuple.T2[SftpgoFolderPayload, RootStorageStr]) string {
-			return path.Join(string(folder.V2), path.Base(folder.V1.MappedPath))
+			return filepath.Join(string(folder.V2), filepath.Base(folder.V1.MappedPath))
 		}).([]string)
 
 		authResp := folders_userStorage_authResp.authResp
@@ -460,7 +460,7 @@ func (m ModSftpgoStruct) CreateTempSpace(serverAddr, admin, adminPassword,
 	}
 
 	// Step 2: Create the virtual folder
-	folderPayload, err := m.sftpgoRegisterHostDir(tempUser, tempDir, serverAddr, path.Join("/share", tempDir), authResp)
+	folderPayload, err := m.sftpgoRegisterHostDir(tempUser, tempDir, serverAddr, filepath.Join("/share", tempDir), authResp)
 	if err != nil {
 		return err
 	}

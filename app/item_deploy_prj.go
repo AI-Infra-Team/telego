@@ -1,7 +1,7 @@
 package app
 
 import (
-	"path"
+	"path/filepath"
 	"strings"
 	"telego/util"
 )
@@ -18,7 +18,7 @@ func (i *MenuItem) LoadDeploymentYml() {
 			// curDir0 := util.CurDir()
 			// os.Chdir(ConfigLoad().ProjectDir)
 			dep, err := LoadDeploymentYml(
-				i.Name, path.Join(ConfigLoad().ProjectDir, i.Name),
+				i.Name, filepath.Join(ConfigLoad().ProjectDir, i.Name),
 			)
 			if err != nil {
 				// os.Chdir(curDir0)

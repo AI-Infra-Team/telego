@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"telego/util"
@@ -185,11 +185,11 @@ func (m UserMount) Run() {
 
 	if runtime.GOOS == "linux" {
 		for _, userMountInfo := range resp.RemoteInfos {
-			localSubPath := path.Join(localRootStorage, userMountInfo.UserStorage_.Type, path.Base(userMountInfo.UserStorage_.RootStorage))
+			localSubPath := filepath.Join(localRootStorage, userMountInfo.UserStorage_.Type, filepath.Base(userMountInfo.UserStorage_.RootStorage))
 			if err := os.MkdirAll(localSubPath, 0755); err != nil {
 				fmt.Printf("UserMount.Run: Error making local mount subpath: %v", err)
 			}
-			cmd := exec.Command("sshpass", "-p", req.GeminiUserInfo.Password, "sshfs", req.GeminiUserInfo.Username+"@"+userMountInfo.AccessServer+":"+path.Base(userMountInfo.UserStorage_.RootStorage), localSubPath)
+			cmd := exec.Command("sshpass", "-p", req.GeminiUserInfo.Password, "sshfs", req.GeminiUserInfo.Username+"@"+userMountInfo.AccessServer+":"+filepath.Base(userMountInfo.UserStorage_.RootStorage), localSubPath)
 			err := cmd.Run()
 			if err != nil {
 				fmt.Printf("UserMount.Run: Error mounting: %v", err)

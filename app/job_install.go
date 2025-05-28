@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"telego/util"
@@ -113,7 +113,7 @@ func (_ ModJobInstallStruct) InstallLocalByJob(job InstallJob) {
 
 	for binname, bininfo := range bins {
 		util.PrintStep("install", fmt.Sprintf("one sub bin %s / %s with config %v", job.BinPrj, binname, bininfo))
-		installTempDir := path.Join("install_"+job.BinPrj, binname)
+		installTempDir := filepath.Join("install_"+job.BinPrj, binname)
 		os.MkdirAll(installTempDir, 0755)
 		defer os.RemoveAll(installTempDir)
 		defer fmt.Println(color.GreenString("Installed %s / %s", job.BinPrj, binname))
@@ -164,11 +164,11 @@ func (_ ModJobInstallStruct) InstallLocalByJob(job InstallJob) {
 					util.PrintStep("intall", fmt.Sprintf("%s/%s with win_installer", job.BinPrj, binname))
 					util.DownloadFile(
 						fmt.Sprintf("http://%s:8003/%s/%s", util.MainNodeIp, job.BinPrj, bininfo.WinInstaller),
-						path.Join(installTempDir, bininfo.WinInstaller),
+						filepath.Join(installTempDir, bininfo.WinInstaller),
 					)
 					if strings.HasSuffix(bininfo.WinInstaller, ".msi") {
 						// start installer
-						_, err := util.ModRunCmd.ShowProgress("msiexec", "/i", strings.ReplaceAll(path.Join(installTempDir, bininfo.WinInstaller), "/", "\\\\"), "/quiet", "/norestart").BlockRun()
+						_, err := util.ModRunCmd.ShowProgress("msiexec", "/i", strings.ReplaceAll(filepath.Join(installTempDir, bininfo.WinInstaller), "/", "\\\\"), "/quiet", "/norestart").BlockRun()
 						if err != nil {
 							// fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
 							// return
@@ -176,7 +176,7 @@ func (_ ModJobInstallStruct) InstallLocalByJob(job InstallJob) {
 						}
 					} else {
 						// start installer
-						_, err := util.ModRunCmd.ShowProgress(path.Join(installTempDir, bininfo.WinInstaller)).BlockRun()
+						_, err := util.ModRunCmd.ShowProgress(filepath.Join(installTempDir, bininfo.WinInstaller)).BlockRun()
 						if err != nil {
 							// fmt.Println(color.RedString("Failed to install %s: %s", binname, err.Error()))
 							// return

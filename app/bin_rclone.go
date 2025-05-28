@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"runtime"
 	"strings"
 	"telego/util"
@@ -75,16 +75,16 @@ func (k BinManagerRclone) SpecInstallFunc() func() error {
 			if runtime.GOARCH == "amd64" {
 				armOrAmd = "amd64"
 			}
-			installDir := path.Join(util.WorkspaceDir(), "install_rclone")
+			installDir := filepath.Join(util.WorkspaceDir(), "install_rclone")
 			os.MkdirAll(installDir, 0755)
 			defer os.RemoveAll(installDir)
 			// os.Chdir("install_rclone")
 			if util.FileServerAccessible() {
-				err := util.DownloadFile(fmt.Sprintf("http://%s:8003/bin_rclone/rclone_%s", util.MainNodeIp, armOrAmd), path.Join(installDir, "rclone"))
+				err := util.DownloadFile(fmt.Sprintf("http://%s:8003/bin_rclone/rclone_%s", util.MainNodeIp, armOrAmd), filepath.Join(installDir, "rclone"))
 				if err != nil {
 					return err
 				}
-				_, err = util.ModRunCmd.RequireRootRunCmd("mv", path.Join(installDir, "rclone"), "/usr/bin/")
+				_, err = util.ModRunCmd.RequireRootRunCmd("mv", filepath.Join(installDir, "rclone"), "/usr/bin/")
 				if err != nil {
 					return err
 				}

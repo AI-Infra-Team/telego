@@ -2,14 +2,14 @@ import yaml,os,base64
 
 curfdir=os.path.dirname(os.path.abspath(__file__))
 os.chdir(curfdir)
-with open("compile_conf.yml") as f:
+with open("compile_conf.yml", encoding='utf-8') as f:
     conf=yaml.safe_load(f)
 main_node_ip=conf["main_node_ip"]
 main_node_user=conf["main_node_user"]
 main_node_sshport=conf.get("main_node_sshport", "22")  # Default to 22 if not specified
 img_repo=conf["image_repo_with_prefix"]
 
-with open("util/compile_conf_gen.go","w") as f:
+with open("util/compile_conf_gen.go", "w", encoding='utf-8') as f:
     f.write(f"""
 package util
 var MainNodeIp = "{main_node_ip}"
@@ -18,7 +18,7 @@ var MainNodeSshPort = "{main_node_sshport}"
 var ImgRepoAddressWithPrefix = "{img_repo}"
 """)
 
-with open("compile_conf.tmp.yml") as f:
+with open("compile_conf.tmp.yml", encoding='utf-8') as f:
     menu_tree_data=yaml.safe_load(f)['menu']
 
 # def walk_menu_tree_data(node,depth):
@@ -168,7 +168,7 @@ for root,dirs,files in os.walk(template_dir):
                 
                 # cur_node["children"].append()
             else:
-                encode_file=base64.b64encode(open(root+"/"+f).read().encode("utf-8")).decode("utf-8")
+                encode_file=base64.b64encode(open(root+"/"+f, encoding='utf-8').read().encode("utf-8")).decode("utf-8")
                 node_add_child(cur_node,{"name":f, "comment":"未限定脚本", "children":[
                     {"name":"run","comment":"执行"},
                     {"name":"cancel","comment":"取消执行"},
@@ -176,6 +176,6 @@ for root,dirs,files in os.walk(template_dir):
                 ]})
 
 encoded=yaml.dump(menu_tree_data)
-with open("app/menu.go","w") as f:
+with open("app/menu.go", "w", encoding='utf-8') as f:
     # write as a go global value
     f.write("package app\nvar MenuTreeData = `"+encoded+"`")

@@ -16,7 +16,6 @@ import (
 	"io"
 	"math/rand"
 	"os"
-	"path"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -531,7 +530,7 @@ func StartRemoteCmds(hosts []string, remoteCmd string, usePasswd string) ([]stri
 			for {
 				randtag := rand.Intn(10000)
 				if _, err := os.Stat(path0); err != nil {
-					path0 = path.Join(LogDir(), "remote_cmd_"+strings.ReplaceAll(host, "@", "_")+"_"+t+"_"+fmt.Sprintf("%v", randtag)+".log")
+					path0 = filepath.Join(LogDir(), "remote_cmd_"+strings.ReplaceAll(host, "@", "_")+"_"+t+"_"+fmt.Sprintf("%v", randtag)+".log")
 					break
 				}
 			}

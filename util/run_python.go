@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -123,7 +122,7 @@ exec(content)
 	`, scriptPath, script, PathWinStyleToLinux(timestamp_file_name), content_base64)
 	tempFile, err := os.CreateTemp("", fmt.Sprintf("%s_*.py",
 		strings.ReplaceAll(
-			strings.ReplaceAll(path.Join(scriptPath, script), "/", "_"),
+			strings.ReplaceAll(filepath.Join(scriptPath, script), "/", "_"),
 			"\\", "_")))
 	if err != nil {
 		fmt.Println("Create temp failed")

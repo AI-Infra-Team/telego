@@ -34,12 +34,12 @@ func DeploymentPrepare(project string, deployment *Deployment) error {
 				return fmt.Errorf("failed to prepare image %s: %w", *item.Image, err)
 			}
 		} else if item.Pyscript != nil && *item.Pyscript != "" {
-			err := DeploymentPreparePyscript(path.Join(ConfigLoad().ProjectDir, project), &item)
+			err := DeploymentPreparePyscript(filepath.Join(ConfigLoad().ProjectDir, project), &item)
 			if err != nil {
 				return fmt.Errorf("failed to prepare pyscript %s: %w", *item.Pyscript, err)
 			}
 		} else if *item.URL != "" {
-			err := DeploymentPrepareUrl(path.Join(ConfigLoad().ProjectDir, project), &item)
+			err := DeploymentPrepareUrl(filepath.Join(ConfigLoad().ProjectDir, project), &item)
 			if err != nil {
 				return fmt.Errorf("failed to prepare url %s: %w", *item.URL, err)
 			}
@@ -49,7 +49,7 @@ func DeploymentPrepare(project string, deployment *Deployment) error {
 				fmt.Println(color.RedString("filemap write failed %v", err))
 			}
 		} else if *item.Git != "" {
-			err := DeploymentPrepareGit(path.Join(ConfigLoad().ProjectDir, project), &item)
+			err := DeploymentPrepareGit(filepath.Join(ConfigLoad().ProjectDir, project), &item)
 			if err != nil {
 				return fmt.Errorf("failed to prepare git %s: %w", *item.Git, err)
 			}
@@ -73,7 +73,7 @@ const PrepareCacheDir = "prepare_cache"
 
 func DeploymentPreparePyscript(prjdir string, item *DeploymentPrepareItem) error {
 	util.PrintStep("prepare pyscript", fmt.Sprintf("prj: %s", prjdir))
-	prjcachedir := path.Join(prjdir, PrepareCacheDir)
+	prjcachedir := filepath.Join(prjdir, PrepareCacheDir)
 	// mkdir
 	err := os.MkdirAll(prjcachedir, 0755)
 	if err != nil {
@@ -110,7 +110,7 @@ func DeploymentPreparePyscript(prjdir string, item *DeploymentPrepareItem) error
 	if err != nil {
 		return fmt.Errorf("failed to run pyscript %s: %w", *item.Pyscript, err)
 	}
-	err = DeploymentPrepareHandleCached(item, prjcachedir, "prepare_py_script has no src file")
+	err = DeploymentPrepareHandleCached(item, prjdir, prjcachedir, "prepare_py_script has no src file")
 	if err != nil {
 		return fmt.Errorf("failed to handle cached: %w", err)
 	}
@@ -122,9 +122,13 @@ func DeploymentPrepareUrl(prjdir string, item *DeploymentPrepareItem) error {
 	util.PrintStep("prepare url", fmt.Sprintf("Downloading file from URL: %s", *item.URL))
 
 	// download to download_cache
-	// downloadCachePath := path.Join(PrepareCacheDir, filepath.Base(*item.URL))
-	prjcachedir := path.Join(prjdir, PrepareCacheDir)
-	downloadCachePath := path.Join(prjcachedir, filepath.Base(*item.URL))
+	// downloadCachePath := filepath.Join(PrepareCacheDir, filepath.Base(*item.URL))
+	prjcachedir := filepath.Join(prjdir, PrepareCacheDir)
+	err := os.MkdirAll(prjcachedir, 0755)
+	if err != nil {
+		return fmt.Errorf("failed to create directory: %w", err)
+	}
+	downloadCachePath := filepath.Join(prjcachedir, filepath.Base(*item.URL))
 	if _, err := os.Stat(downloadCachePath); err != nil {
 		err := util.DownloadFile(*item.URL, downloadCachePath)
 		if err != nil {
@@ -132,7 +136,7 @@ func DeploymentPrepareUrl(prjdir string, item *DeploymentPrepareItem) error {
 			return fmt.Errorf("failed to download file from %s: %w", *item.URL, err)
 		}
 	}
-	return DeploymentPrepareHandleCached(item, prjcachedir, filepath.Base(*item.URL))
+	return DeploymentPrepareHandleCached(item, prjdir, prjcachedir, filepath.Base(*item.URL))
 }
 
 func DeploymentPrepareGit(prjdir string, item *DeploymentPrepareItem) error {
@@ -153,7 +157,7 @@ func DeploymentPrepareGit(prjdir string, item *DeploymentPrepareItem) error {
 	}
 
 	util.PrintStep("prepare git", fmt.Sprintf("Downloading git prj from URL: %s, branch: %s", giturl, branch))
-	cloneAtDir := path.Join(prjdir, PrepareCacheDir)
+	cloneAtDir := filepath.Join(prjdir, PrepareCacheDir)
 	// mk dir all
 	err := os.MkdirAll(cloneAtDir, 0755)
 	if err != nil {
@@ -165,7 +169,7 @@ func DeploymentPrepareGit(prjdir string, item *DeploymentPrepareItem) error {
 	cloneTargetName = strings.TrimSuffix(cloneTargetName, ".git")
 
 	// check exsit
-	if _, err := os.Stat(path.Join(cloneAtDir, cloneTargetName)); err != nil {
+	if _, err := os.Stat(filepath.Join(cloneAtDir, cloneTargetName)); err != nil {
 		// clone
 		_, err = util.ModRunCmd.NewBuilder("git", "clone", giturl, cloneTargetName).
 			SetDir(cloneAtDir).ShowProgress().BlockRun()
@@ -177,28 +181,28 @@ func DeploymentPrepareGit(prjdir string, item *DeploymentPrepareItem) error {
 	// checkout branch
 	if branch != "" {
 		_, err = util.ModRunCmd.NewBuilder("git", "checkout", branch).
-			SetDir(path.Join(cloneAtDir, cloneTargetName)).ShowProgress().BlockRun()
+			SetDir(filepath.Join(cloneAtDir, cloneTargetName)).ShowProgress().BlockRun()
 		if err != nil {
 			return fmt.Errorf("failed to checkout branch: %w", err)
 		}
 	}
 
 	// after clone, archive to prjdir/teledeploy/git_prj_name.tar.gz
-	tarPath := path.Join(prjdir, "teledeploy", fmt.Sprintf("%s.tar.gz", cloneTargetName))
+	tarPath := filepath.Join(prjdir, "teledeploy", fmt.Sprintf("%s.tar.gz", cloneTargetName))
 	// remove old tar
 	os.RemoveAll(tarPath)
-	err = archiver.Archive([]string{path.Join(cloneAtDir, cloneTargetName)}, tarPath)
+	err = archiver.Archive([]string{filepath.Join(cloneAtDir, cloneTargetName)}, tarPath)
 	if err != nil {
 		return fmt.Errorf("failed to archive git repo: %w", err)
 	}
 
 	util.PrintStep("prepare git", fmt.Sprintf("Archive git repo to %s, fetch it by fileserver/%s/%s.tar.gz",
-		tarPath, path.Base(prjdir), cloneTargetName))
+		tarPath, filepath.Base(prjdir), cloneTargetName))
 
 	return nil
 }
 
-func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, downloadCacheDir string, srcFileName string) error {
+func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, prjdir string, downloadCacheDir string, srcFileName string) error {
 	_, err := os.Stat(downloadCacheDir)
 	if err == nil {
 		// Execute "trans" command if provided
@@ -208,7 +212,8 @@ func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, downloadCacheDir
 			for _, step := range item.Trans {
 				switch step := step.(type) {
 				case DeploymentTransformExtract:
-					toExtract := path.Join(downloadCacheDir, srcFileName)
+					fmt.Println(color.BlueString("Extracting file: %s", srcFileName))
+					toExtract := filepath.Join(downloadCacheDir, srcFileName)
 					extractAppeared = true
 					os.RemoveAll("extract")
 					fmt.Println(color.BlueString("Extracting file: %s", toExtract))
@@ -222,18 +227,23 @@ func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, downloadCacheDir
 					}
 				case DeploymentTransformCopy:
 					for _, copyStep := range step.Copy {
-						src := path.Join("extract", *copyStep.from)
+						src := filepath.Join("extract", *copyStep.from)
 
 						// no extect before copy, we just copy the file from downloadCacheDir
 						if !extractAppeared {
-							src = path.Join(downloadCacheDir, *copyStep.from)
+							src = filepath.Join(downloadCacheDir, *copyStep.from)
 						}
 
-						dest := *copyStep.to
+						dest := filepath.Join(prjdir, *copyStep.to)
 
 						fmt.Println(color.BlueString("Copying %s to %s", src, dest))
-						newSrc := path.Join(path.Dir(src), path.Base(dest))
-						err := os.Rename(src, newSrc)
+						newSrc := filepath.Join(path.Dir(src), filepath.Base(dest))
+						newSrcDir := filepath.Dir(newSrc)
+						err := os.MkdirAll(newSrcDir, 0755)
+						if err != nil {
+							return fmt.Errorf("failed to create directory: %w", err)
+						}
+						err = os.Rename(src, newSrc)
 						if err != nil {
 							filetree, err := util.GetFileTree(10, "extract")
 							filetreeStr := ""
@@ -257,14 +267,25 @@ func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, downloadCacheDir
 			// 	return fmt.Errorf("failed to execute transformation %s: %w", item.Trans, err)
 			// }
 		} else if *item.As != "" {
-			copySrc := path.Join(downloadCacheDir, srcFileName)
-			util.ModRunCmd.CopyDirContentOrFileTo(copySrc, path.Dir(*item.As))
-			src := path.Join(path.Dir(*item.As), path.Base(copySrc))
-			dest := *item.As
-			err := os.Rename(src, dest)
+			copySrc := filepath.Join(downloadCacheDir, srcFileName)
+			as := filepath.Join(prjdir, *item.As)
+			asDir := filepath.Dir(as)
+			err := os.MkdirAll(asDir, 0755)
 			if err != nil {
-				return fmt.Errorf("failed to rename %s to %s: %w", src, dest, err)
+				return fmt.Errorf("failed to create directory: %w", err)
 			}
+			fmt.Println(color.BlueString("Copying %s to %s", copySrc, as))
+			err = os.Rename(copySrc, as)
+			if err != nil {
+				return fmt.Errorf("failed to rename %s to %s: %w", copySrc, as, err)
+			}
+			// util.ModRunCmd.CopyDirContentOrFileTo(copySrc, path.Dir(*item.As))
+			// src := filepath.Join(path.Dir(*item.As), path.Base(copySrc))
+			// dest := *item.As
+			// err := os.Rename(src, dest)
+			// if err != nil {
+			// 	return fmt.Errorf("failed to rename %s to %s: %w", src, dest, err)
+			// }
 		}
 	}
 	return nil

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"telego/util/yamlext"
@@ -78,7 +78,7 @@ func (r MainNodeConfWriter) writeConf(path0 string, remotedir string, content st
 		return fmt.Errorf("failed to create temp dir: %v", err)
 	}
 	// create temp file
-	tempfile, err := os.Create(path.Join(tempdir, path0))
+	tempfile, err := os.Create(filepath.Join(tempdir, path0))
 	if err != nil {
 		return fmt.Errorf("failed to create temp file: %v", err)
 	}
@@ -388,7 +388,7 @@ func (r MainNodeConfReader) ReadSecretConf(path0 SecretConfType) (string, error)
 	}
 
 	base := "/teledeploy_secret/config"
-	confpath := path.Join(base, path0.SecretConfPath())
+	confpath := filepath.Join(base, path0.SecretConfPath())
 	if confpath != "" {
 		Logger.Debugf("reading secret conf " + path0.SecretConfPath())
 		res, err := ReadStrFromMainNode(confpath)

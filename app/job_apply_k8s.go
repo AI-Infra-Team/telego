@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 
 	"telego/util"
@@ -66,7 +66,7 @@ func (_ ModJobApplyStruct) applyLocal(job ApplyJob) {
 		fmt.Println(color.RedString("helm:%v, helm-ns%v suppose to be aligned"))
 		return
 	}
-	os.Chdir(path.Join(ConfigLoad().ProjectDir, job.Project))
+	os.Chdir(filepath.Join(ConfigLoad().ProjectDir, job.Project))
 
 	errs := []error{}
 	for i, k8s := range job.K8sDirs {
@@ -98,7 +98,7 @@ func (_ ModJobApplyStruct) applyLocal(job ApplyJob) {
 			config = split[1]
 		}
 		helmNs := job.HelmNamespaces[i]
-		helm := path.Base(helmDir)
+		helm := filepath.Base(helmDir)
 		helmCmds := []string{"helm", "install", helm, helmDir, "--kube-context", job.ClusterContext}
 		if helmNs != "" {
 			helmCmds = append(helmCmds, "--namespace", helmNs)

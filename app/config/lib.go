@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -30,7 +29,7 @@ func SetFake(prjdir string) {
 
 func LoadFake() Config {
 	return Config{
-		ProjectDir: path.Join(homedir.HomeDir(), "fake_prj_dir"),
+		ProjectDir: filepath.Join(homedir.HomeDir(), "fake_prj_dir"),
 	}
 }
 

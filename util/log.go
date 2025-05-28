@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"time"
 
@@ -39,7 +38,7 @@ func SetupFileLog() *os.File {
 	Logger.SetLevel(logrus.DebugLevel)
 	// time stamp
 	curtime := time.Now().Format("2006-01-02-15h04m05s")
-	file, err := os.OpenFile(path.Join(LogDir(), fmt.Sprintf("%s.log", curtime)), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
+	file, err := os.OpenFile(filepath.Join(LogDir(), fmt.Sprintf("%s.log", curtime)), os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0755)
 	if err != nil {
 		fmt.Printf("Error opening log file: %v\n", err)
 		return nil

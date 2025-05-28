@@ -5,6 +5,7 @@ import (
 	"io/fs"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"strconv"
 	"strings"
@@ -59,7 +60,7 @@ func (l LocalValueReadFile) LocalValueInterfaceDummy() {}
 // DeploymentYaml represents the structure of yml.
 type DeploymentYaml struct {
 	Comment     string                            `yaml:"comment"`
-	LocalValues map[string]interface{}            `yaml:"local_values"`
+	LocalValues map[string]interface{}            `yaml:"local_values,omitempty"`
 	Secrets     []string                          `yaml:"secret,omitempty"`
 	Prepare     []DeploymentPrepareItemYaml       `yaml:"prepare"`
 	Helms       map[string]DeploymentHelm         `yaml:"helms,omitempty"`
@@ -144,9 +145,9 @@ func (d *DeploymentYaml) Verify(prjName string, prjDir string, yml []byte, skipR
 		for k, v := range dply.LocalValues {
 			switch v := v.(type) {
 			case LocalValueReadFile:
-				fileContent, err := os.ReadFile(path.Join(prjDir, v.ReadFromFile))
+				fileContent, err := os.ReadFile(filepath.Join(prjDir, v.ReadFromFile))
 				if err != nil {
-					return nil, fmt.Errorf("invalid local_values item: read_from_file %s not found", path.Join(prjDir, v.ReadFromFile))
+					return nil, fmt.Errorf("invalid local_values item: read_from_file %s not found", filepath.Join(prjDir, v.ReadFromFile))
 				}
 				v.ReadFromFile = string(fileContent)
 				dply.LocalValues[k] = v
@@ -483,11 +484,12 @@ type DeploymentK8s struct {
 }
 
 func LoadDeploymentYml(prjName string, subPrjDir string) (*Deployment, error) {
-	ymlFile := path.Join(subPrjDir, "deployment.yml")
-	if path.Base(ymlFile) != "deployment.yml" {
-		util.Logger.Fatal("yml not found")
-		os.Exit(1)
-	}
+	ymlFile := filepath.Join(subPrjDir, "deployment.yml")
+	// if path.Base(ymlFile) != "deployment.yml" {
+	// 	fmt.Printf(color.RedString("yml not found: %s\n"), ymlFile)
+	// 	util.Logger.Fatalf("yml not found: %s", ymlFile)
+	// 	os.Exit(1)
+	// }
 	if !util.PathIsAbsolute(ymlFile) {
 		util.Logger.Fatalf("path should be absolute %s", ymlFile)
 		os.Exit(1)

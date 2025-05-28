@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"telego/util"
 )
@@ -49,12 +50,12 @@ func (d *DeploymentBinDetailsPyInstaller) Run() error {
 		return fmt.Errorf("failed to change dir to install dir: %w", err)
 	}
 	err = util.DownloadFile(
-		util.UrlJoin(util.MainNodeFileServerURL, d.PrjName, d.Script), path.Join(installdir, path.Base(d.Script)))
+		util.UrlJoin(util.MainNodeFileServerURL, d.PrjName, d.Script), filepath.Join(installdir, path.Base(d.Script)))
 	if err != nil {
 		return fmt.Errorf("failed to download file from %s: %w", d.Script, err)
 	}
 
-	cmds := []string{"python3", path.Base(d.Script)}
+	cmds := []string{"python3", filepath.Base(d.Script)}
 	cmds = append(cmds, d.Args...)
 	if util.IsWindows() {
 		cmds[0] = "python"

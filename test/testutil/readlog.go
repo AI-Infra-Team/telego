@@ -2,7 +2,6 @@ package testutil
 
 import (
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -10,7 +9,7 @@ import (
 )
 
 func getMostRecentLog(t *testing.T, logDir string, filter func(string) bool) string {
-	files, err := filepath.Glob(path.Join(logDir, "*.log"))
+	files, err := filepath.Glob(filepath.Join(logDir, "*.log"))
 	if err != nil {
 		// ogger.Warnf("Error listing log files: %v", err)
 		t.Fatalf("Error listing log files: %v", err)

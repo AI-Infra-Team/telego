@@ -3,7 +3,7 @@ package template
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"telego/util"
 
@@ -27,12 +27,12 @@ func GenSpecTemp(thepath string) string {
 		util.UnzipFile("teleyard-template.zip", "teleyard-template")
 	}
 
-	pathBase := path.Base(thepath)
+	pathBase := filepath.Base(thepath)
 	// pathDir := path.Dir(thepath)
-	targetDir := path.Join(ConfigLoad().ProjectDir, pathBase)
-	// fmt.Printf("%s -> %s\n", path.Join("teleyard-template", thepath), targetDir)
+	targetDir := filepath.Join(ConfigLoad().ProjectDir, pathBase)
+	// fmt.Printf("%s -> %s\n", filepath.Join("teleyard-template", thepath), targetDir)
 	// os.Exit(1)
-	err := util.ModRunCmd.CopyDirContentOrFileTo(path.Join("teleyard-template", thepath), targetDir)
+	err := util.ModRunCmd.CopyDirContentOrFileTo(filepath.Join("teleyard-template", thepath), targetDir)
 	if err != nil {
 		fmt.Println(color.RedString("copy template failed %s", err))
 	}
@@ -40,7 +40,7 @@ func GenSpecTemp(thepath string) string {
 	if err == nil {
 		for _, entry := range entries {
 			if strings.Contains(entry.Name(), "upload.py") || strings.Contains(entry.Name(), "prepare.py") || strings.Contains(entry.Name(), "run.py") {
-				os.Remove(path.Join(targetDir, entry.Name()))
+				os.Remove(filepath.Join(targetDir, entry.Name()))
 			}
 		}
 	}

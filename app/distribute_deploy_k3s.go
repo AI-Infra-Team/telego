@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"os"
 	"os/user"
-	"path"
 	"path/filepath"
 	"strings"
 	"telego/util"
@@ -195,7 +194,7 @@ func (d DistributeDeployerK3s) ThisNodeGeneralInstall() error {
 
 	util.PrintStep("ThisNodeGeneralInstall", "preparing binded resources...")
 	download := func(fileName string, targetDir string) {
-		fp := path.Join(targetDir, fileName)
+		fp := filepath.Join(targetDir, fileName)
 		if _, err := os.Stat(fp); err != nil {
 			util.DownloadFile(fmt.Sprintf("http://%s:8003/bin_k3s/"+fileName, util.MainNodeIp), fp)
 		} else {

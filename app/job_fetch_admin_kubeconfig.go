@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"telego/util"
 
 	"github.com/fatih/color"
@@ -14,14 +14,14 @@ import (
 func FetchAdminKubeconfig() {
 	fmt.Println(color.BlueString("Fetching admin kubeconfig ..."))
 	//mkdir
-	os.MkdirAll(path.Join(homedir.HomeDir(), ".kube"), 0700)
+	os.MkdirAll(filepath.Join(homedir.HomeDir(), ".kube"), 0700)
 	conf, err := util.MainNodeConfReader{}.ReadSecretConf(util.SecretConfTypeAdminKubeconfig{})
 	if err != nil {
 		fmt.Println(color.RedString("FetchAdminKubeconfig Error1: %s", err))
 		os.Exit(1)
 	}
 	// open and write to file
-	f, err := os.OpenFile(path.Join(homedir.HomeDir(), ".kube/config"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
+	f, err := os.OpenFile(filepath.Join(homedir.HomeDir(), ".kube/config"), os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0600)
 	if err != nil {
 		fmt.Println(color.RedString("FetchAdminKubeconfig Error2: %s", err))
 		os.Exit(1)
@@ -32,7 +32,7 @@ func FetchAdminKubeconfig() {
 		fmt.Println(color.RedString("FetchAdminKubeconfig Error3: %s", err))
 		os.Exit(1)
 	}
-	// util.FetchFromMainNode("/teledeploy_secret/kubeconfig/config", path.Join(homedir.HomeDir(), ".kube"))
+	// util.FetchFromMainNode("/teledeploy_secret/kubeconfig/config", filepath.Join(homedir.HomeDir(), ".kube"))
 	fmt.Println(color.GreenString("Fetched admin kubeconfig"))
 }
 

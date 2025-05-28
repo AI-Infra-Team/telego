@@ -33,25 +33,44 @@ func InitOwnedDir(){
 		"/teledeploy_secret",
 		"/teledeploy",
 	}
-	for _, dir := range dirs {
-		cmds:=[][]string{
-			{"mkdir","-p",dir},
-			{"chown",currentUser.Uid+":"+currentUser.Gid,"-R",dir},
-			{"chmod","700",dir},
+	
+	// On Windows, adjust directory paths to use home directory
+	if runtime.GOOS == "windows" {
+		dirs = []string{
+			filepath.Join(currentUser.HomeDir, "teledeploy_secret"),
+			filepath.Join(currentUser.HomeDir, "teledeploy"),
 		}
-		for _, cmd := range cmds {
-			_,err:=ModRunCmd.NewBuilder(
-				cmd[0],cmd[1:]...).
-				// fmt.Sprintf(
-				// "mkdir -p %s && chown -R %s:%s %s && chmod 700 %s", 
-				// dir, currentUser.Uid, currentUser.Gid, dir, dir)
-				
-				WithRoot().
-				ShowProgress().
-				BlockRun()
+	}
+	
+	for _, dir := range dirs {
+		if runtime.GOOS == "windows" {
+			// Windows: Use os.MkdirAll directly, no need for chown/chmod
+			err := os.MkdirAll(dir, 0755)
 			if err != nil {
-				fmt.Println(color.RedString("Error creating and owning directory, err: %v", err))
+				fmt.Println(color.RedString("Error creating directory %s, err: %v", dir, err))
 				os.Exit(1)
+			}
+		} else {
+			// Linux/Unix: Use the existing command approach
+			cmds:=[][]string{
+				{"mkdir","-p",dir},
+				{"chown",currentUser.Uid+":"+currentUser.Gid,"-R",dir},
+				{"chmod","700",dir},
+			}
+			for _, cmd := range cmds {
+				_,err:=ModRunCmd.NewBuilder(
+					cmd[0],cmd[1:]...).
+					// fmt.Sprintf(
+					// "mkdir -p %s && chown -R %s:%s %s && chmod 700 %s", 
+					// dir, currentUser.Uid, currentUser.Gid, dir, dir)
+					
+					WithRoot().
+					ShowProgress().
+					BlockRun()
+				if err != nil {
+					fmt.Println(color.RedString("Error creating and owning directory, err: %v", err))
+					os.Exit(1)
+				}
 			}
 		}
 	}

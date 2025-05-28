@@ -3,7 +3,6 @@ package util
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"time"
@@ -12,7 +11,7 @@ import (
 )
 
 func getMostRecentLog(logDir string, filter func(string) bool) string {
-	files, err := filepath.Glob(path.Join(logDir, "*.log"))
+	files, err := filepath.Glob(filepath.Join(logDir, "*.log"))
 	if err != nil {
 		errMsg := color.RedString("Error listing log files: %v", err)
 		fmt.Println(errMsg)
@@ -43,7 +42,7 @@ func GetMostRecentRemoteLog() string {
 	f := getMostRecentLog(LogDir(), func(file string) bool {
 		return strings.HasPrefix(file, "remote_")
 	})
-	content, err := os.ReadFile(path.Join(LogDir(), f))
+	content, err := os.ReadFile(filepath.Join(LogDir(), f))
 	if err != nil {
 		fmt.Println(color.RedString("Error reading log file: %v", err))
 		os.Exit(1)
@@ -56,7 +55,7 @@ func GetMostRecentLog() string {
 	f := getMostRecentLog(LogDir(), func(file string) bool {
 		return !strings.HasPrefix(file, "remote_")
 	})
-	content, err := os.ReadFile(path.Join(LogDir(), f))
+	content, err := os.ReadFile(filepath.Join(LogDir(), f))
 	if err != nil {
 		fmt.Println(color.RedString("Error reading log file: %v", err))
 		os.Exit(1)

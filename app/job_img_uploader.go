@@ -10,7 +10,6 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
-	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -172,7 +171,7 @@ func (m *ModJobImgUploaderStruct) uploadImageV2() {
 
 	util.PrintStep("ImgUploader", "已挂载到 "+mountPath+", 请用文件传输助手上传镜像文件到对应目录，并在终端输入 y 后回车")
 	tempfile := "现在开始往当前文件夹上传镜像，上传完后回到终端确认"
-	file, err := os.Create(path.Join(mountPath, tempfile))
+	file, err := os.Create(filepath.Join(mountPath, tempfile))
 	if err != nil {
 		fmt.Println(color.RedString("创建临时文件失败"))
 		os.Exit(1)
@@ -246,7 +245,7 @@ func (m *ModJobImgUploaderStruct) uploadImageV2() {
 					return
 				}
 				remotelist = funk.Map(remotelist, func(s string) string {
-					return path.Base(s)
+					return filepath.Base(s)
 				}).([]string)
 
 				sort.Strings(remotelist)
@@ -430,7 +429,7 @@ func imgUploaderUploadHandlerV2(c *gin.Context, workdir string) {
 		}
 
 		if uploaded.CheckDir {
-			tarlist_, err := os.ReadDir(path.Join(workdir, imgdir))
+			tarlist_, err := os.ReadDir(filepath.Join(workdir, imgdir))
 			if err != nil {
 				c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("read dir failed: %v", err)})
 				return
@@ -449,7 +448,7 @@ func imgUploaderUploadHandlerV2(c *gin.Context, workdir string) {
 			return
 		}
 
-		succress, err := handler.checkAndUploadImgs(path.Join(workdir, imgdir))
+		succress, err := handler.checkAndUploadImgs(filepath.Join(workdir, imgdir))
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": fmt.Sprintf("check and upload imgs failed: %v", err)})
 			return
@@ -479,13 +478,13 @@ func imgUploaderUploadHandlerV2(c *gin.Context, workdir string) {
 
 		if !func() bool {
 			// return if empty or not exist
-			_, err := os.Stat(path.Join(workdir, user_pw_dir.V3))
+			_, err := os.Stat(filepath.Join(workdir, user_pw_dir.V3))
 			if err != nil {
 				// not exist
 				return true
 			}
 			// listdir
-			files, err := os.ReadDir(path.Join(workdir, user_pw_dir.V3))
+			files, err := os.ReadDir(filepath.Join(workdir, user_pw_dir.V3))
 			if err != nil {
 				return false
 			}
@@ -500,7 +499,7 @@ func imgUploaderUploadHandlerV2(c *gin.Context, workdir string) {
 			return
 		}
 
-		err = os.MkdirAll(path.Join(workdir, user_pw_dir.V3), 0755)
+		err = os.MkdirAll(filepath.Join(workdir, user_pw_dir.V3), 0755)
 		if err != nil {
 			err = fmt.Errorf("failed to create temp dir: %w", err)
 			c.JSON(http.StatusInternalServerError, gin.H{"error": fmt.Sprintf("failed to create temp dir: %v", err)})

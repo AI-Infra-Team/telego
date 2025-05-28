@@ -3,14 +3,14 @@ package util
 import (
 	"fmt"
 	"os/exec"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 )
 
 // the tempDir need to be existing
 func InstallWindowsBin(url, tempDir, binname string) error {
-	tempFilePath := path.Join(tempDir, path.Base(url))
+	tempFilePath := filepath.Join(tempDir, filepath.Base(url))
 	DownloadFile(url, tempFilePath)
 
 	moveCommand := fmt.Sprintf("echo \"安装 %s 中\" && timeout /t 1 && move %s C:\\Windows\\System32\\%s", binname, strings.ReplaceAll(tempFilePath, "/", "\\"), fmt.Sprintf("%s.exe", binname))
@@ -29,7 +29,7 @@ func InstallWindowsBin(url, tempDir, binname string) error {
 
 // the tempDir need to be existing
 func InstallLinuxBin(url, tempDir, binname string) error {
-	tempFilePath := path.Join(tempDir, path.Base(url))
+	tempFilePath := filepath.Join(tempDir, filepath.Base(url))
 	// file is owned by common user
 	DownloadFile(url, tempFilePath)
 

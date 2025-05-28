@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"telego/util"
@@ -53,7 +52,7 @@ func (m ModJobApplyDistStruct) DistConfigMapName(distprj string) string {
 
 func (m ModJobApplyDistStruct) ApplyDistLocal(prjname string, kubecontext string) {
 	prjdir := ConfigLoad().ProjectDir
-	distprjdir := path.Join(prjdir, prjname)
+	distprjdir := filepath.Join(prjdir, prjname)
 
 	if _, err := os.Stat(distprjdir); err != nil {
 		fmt.Println(color.RedString("Error: project %s not found in prjdir %s", prjname, prjdir))
@@ -97,7 +96,7 @@ func (m ModJobApplyDistStruct) ApplyDistLocal(prjname string, kubecontext string
 		// {tempYamlDir}/
 		//   ├── configmap.yaml          // Stores distribution configurations
 		//   └── daemonset-{distname}.yaml   // DaemonSet for each node group
-		tempYamlDir := path.Join(util.WorkspaceDir(), prjname)
+		tempYamlDir := filepath.Join(util.WorkspaceDir(), prjname)
 		// kubectl delete existing daemonsets
 		_, err = util.ModRunCmd.NewBuilder("kubectl", "delete", "-f", tempYamlDir, "--context", kubecontext, "--namespace", "tele-deployment").ShowProgress().BlockRun()
 		if err != nil {
@@ -170,7 +169,7 @@ data:
 			}
 
 			// 将生成的 ConfigMap 写入文件
-			err = os.WriteFile(path.Join(tempYamlDir, "configmap.yaml"), result.Bytes(), 0644)
+			err = os.WriteFile(filepath.Join(tempYamlDir, "configmap.yaml"), result.Bytes(), 0644)
 			if err != nil {
 				fmt.Println(color.RedString("Error creating configmap.yaml: %s", err))
 				os.Exit(1)
@@ -233,8 +232,8 @@ func (m ModJobApplyDistStruct) gendaemonset(
 			return arr
 		}(),
 		"Distribution": d.Distribution,
-		"InitImage":    path.Join(util.ImgRepoAddressNoPrefix(), "teleinfra/python:3.12.5"),
-		"RuntimeImage": path.Join(util.ImgRepoAddressNoPrefix(), "teleinfra/openssh:9.1"),
+		"InitImage":    filepath.Join(util.ImgRepoAddressNoPrefix(), "teleinfra/python:3.12.5"),
+		"RuntimeImage": filepath.Join(util.ImgRepoAddressNoPrefix(), "teleinfra/openssh:9.1"),
 		"MainNodeIP":   util.MainNodeIp,
 		"InstallCurlCmd": strings.ReplaceAll(
 			util.ModContainerCmd{}.WithHostCurl("/host-usr"), "\n", "\n          "),

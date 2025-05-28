@@ -3,7 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
-	"path"
+	"path/filepath"
 	"strings"
 	"telego/util"
 	"telego/util/yamlext"
@@ -21,7 +21,7 @@ func DeploymentUpload(project string, deploymentConf *Deployment) error {
 	defer os.Chdir(curDir0)
 
 	// cd into projectDir
-	projectDir := path.Join(ConfigLoad().ProjectDir, project)
+	projectDir := filepath.Join(ConfigLoad().ProjectDir, project)
 	fmt.Println(color.BlueString("Uploading project %s contents in %s", project, projectDir))
 	os.Chdir(projectDir)
 
@@ -57,7 +57,7 @@ func DeploymentUpload(project string, deploymentConf *Deployment) error {
 		if err != nil {
 			fmt.Println(color.YellowString("teledeploy is not exist, \n  please make sure if there are things to upload to public fileserver and prepare is executed"))
 		} else {
-			util.UploadToMainNode("teledeploy", path.Join("/teledeploy", project))
+			util.UploadToMainNode("teledeploy", filepath.Join("/teledeploy", project))
 		}
 	}
 
@@ -68,7 +68,7 @@ func DeploymentUpload(project string, deploymentConf *Deployment) error {
 		if err != nil {
 			fmt.Println(color.YellowString("teledeploy_secret is not exist, \n  please make sure if there are things to upload to secret fileserver and prepare is executed"))
 		} else {
-			util.UploadToMainNode("teledeploy_secret", path.Join("/teledeploy_secret", project))
+			util.UploadToMainNode("teledeploy_secret", filepath.Join("/teledeploy_secret", project))
 		}
 	}
 
@@ -76,7 +76,7 @@ func DeploymentUpload(project string, deploymentConf *Deployment) error {
 		util.PrintStep("DeploymentUpload", "uploading yaml content (deployment.yml) to main_node")
 		// upload k8s things
 		// - deployment.yml
-		util.UploadToMainNode("deployment.yml", path.Join("/teledeploy", project))
+		util.UploadToMainNode("deployment.yml", filepath.Join("/teledeploy", project))
 
 	}
 
@@ -98,7 +98,7 @@ func DeploymentUpload(project string, deploymentConf *Deployment) error {
 			for _, img := range imageNames {
 				fmt.Println(color.BlueString("Uploading img %s", img))
 				cmds := ModJobImgUploader.NewCmd(ImgUploaderModeClient{
-					ImagePath: path.Join(ConfigLoad().ProjectDir, "container_image", fmt.Sprintf("image_%v", img))})
+					ImagePath: filepath.Join(ConfigLoad().ProjectDir, "container_image", fmt.Sprintf("image_%v", img))})
 				_, err := util.ModRunCmd.ShowProgress(cmds[0], cmds[1:]...).ShowProgress().BlockRun()
 				if err != nil {
 					fmt.Println(color.RedString("ImgUploader upload failed: %s", err))
@@ -106,13 +106,13 @@ func DeploymentUpload(project string, deploymentConf *Deployment) error {
 				}
 				fmt.Println(color.GreenString("ImgUploader upload success: %s", img))
 				// ModJobImgUploader.ImgUploaderLocal(ImgUploaderModeClient{
-				// 	ImagePath: path.Join(ConfigLoad().ProjectDir, "container_image", fmt.Sprintf("image_%v", img))})
+				// 	ImagePath: filepath.Join(ConfigLoad().ProjectDir, "container_image", fmt.Sprintf("image_%v", img))})
 			}
 		} else {
 			util.PrintStep("ImgUploader", "upload images by rclone with admin permission")
 			if len(imageNames) > 0 {
 				for _, imageName := range imageNames {
-					localPath := path.Join(ConfigLoad().ProjectDir, "container_image", fmt.Sprintf("image_%s", imageName))
+					localPath := filepath.Join(ConfigLoad().ProjectDir, "container_image", fmt.Sprintf("image_%s", imageName))
 					remotePath := fmt.Sprintf("/teledeploy_secret/container_image/image_%s", imageName)
 					fmt.Println(color.BlueString("Uploading img %s to %s", localPath, remotePath))
 					util.UploadToMainNode(localPath, remotePath)

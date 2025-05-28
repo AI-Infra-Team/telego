@@ -2,7 +2,7 @@ package app
 
 import (
 	"fmt"
-	"path"
+	"path/filepath"
 	"telego/util"
 
 	"github.com/fatih/color"
@@ -50,5 +50,5 @@ func (w BinMangerWrapper) MakeSureWith() error {
 }
 
 func BinInstallDir(project string) string {
-	return path.Join(util.WorkspaceDir(), project, "install")
+	return filepath.Join(util.WorkspaceDir(), project, "install")
 }
