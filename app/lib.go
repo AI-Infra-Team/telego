@@ -171,6 +171,8 @@ func InitMenuTree(loadSubPrjs bool) *MenuItem {
 }
 
 func Main() {
+	util.SaveEntryDir()
+
 	go util.HasNetwork()
 	util.InitOwnedDir()
 	workdir := util.WorkspaceDir()
@@ -182,8 +184,6 @@ func Main() {
 		os.Exit(1)
 	}
 	defer logfile.Close()
-
-	util.SaveEntryDir()
 
 	_, err := os.Getwd()
 	if err != nil {
@@ -208,6 +208,14 @@ func Main() {
 		},
 	}
 
+	mkSureBins := func() {
+		err := NewBinManager(BinManagerRclone{}).MakeSureWith()
+		if err != nil {
+			fmt.Println(color.RedString("Rclone install failed, err: v%", err))
+			os.Exit(1)
+		}
+	}
+
 	for _, mod := range jobmods {
 		// fmt.Println("with job:", mod.JobCmdName())
 		cmd := mod.ParseJob(&cobra.Command{
@@ -219,11 +227,7 @@ func Main() {
 			if funk.Contains(PreinitSkipInstallRcloneJobs, mod.JobCmdName()) {
 				util.PrintStep(mod.JobCmdName(), "skip install rclone")
 			} else {
-				err = NewBinManager(BinManagerRclone{}).MakeSureWith()
-				if err != nil {
-					fmt.Println(color.RedString("Rclone install failed, err: v%", err))
-					os.Exit(1)
-				}
+				mkSureBins()
 			}
 			cmdRunInner(cmd, args)
 		}
@@ -235,6 +239,8 @@ func Main() {
 	if !parseFail {
 		return
 	}
+
+	mkSureBins()
 
 	util.PrintStep("telego start", "starting tui menu")
 

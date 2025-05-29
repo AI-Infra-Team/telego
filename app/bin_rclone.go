@@ -78,54 +78,106 @@ func (k BinManagerRclone) SpecInstallFunc() func() error {
 			installDir := filepath.Join(util.WorkspaceDir(), "install_rclone")
 			os.MkdirAll(installDir, 0755)
 			defer os.RemoveAll(installDir)
-			// os.Chdir("install_rclone")
-			if util.FileServerAccessible() {
-				err := util.DownloadFile(fmt.Sprintf("http://%s:8003/bin_rclone/rclone_%s", util.MainNodeIp, armOrAmd), filepath.Join(installDir, "rclone"))
-				if err != nil {
-					return err
-				}
-				_, err = util.ModRunCmd.RequireRootRunCmd("mv", filepath.Join(installDir, "rclone"), "/usr/bin/")
-				if err != nil {
-					return err
-				}
-				_, err = util.ModRunCmd.RequireRootRunCmd("chmod", "555", "/usr/bin/rclone")
-				if err != nil {
-					return err
-				}
-				return nil
-			} else {
-				// _, err := util.ModRunCmd.NewBuilder("telego", "cmd", "--cmd", "deploy-templete/bin_rclone/install/local").ShowProgress().BlockRun()
 
-				// https://github.com/rclone/rclone/releases/download/v1.68.1/rclone-v1.68.1-linux-amd64.zip
-				err := util.DownloadFile(fmt.Sprintf("https://github.com/rclone/rclone/releases/download/v1.68.1/rclone-v1.68.1-linux-%s.zip", armOrAmd), "rclone.zip")
+			// check bin_rclone prepared in project_dir
+			prjBinDir := filepath.Join(ConfigLoad().ProjectDir, "bin_rclone", "teledeploy", "rclone_"+armOrAmd)
+			solutions := []func() error{
+				func() error {
+					return util.InstallLinuxPreparedBin(prjBinDir, "rclone")
+				},
+				func() error {
+					if util.FileServerAccessible() {
+						err := util.DownloadFile(fmt.Sprintf("http://%s:8003/bin_rclone/rclone_%s", util.MainNodeIp, armOrAmd), filepath.Join(installDir, "rclone"))
+						if err != nil {
+							return err
+						}
+						_, err = util.ModRunCmd.RequireRootRunCmd("mv", filepath.Join(installDir, "rclone"), "/usr/bin/")
+						if err != nil {
+							return err
+						}
+						_, err = util.ModRunCmd.RequireRootRunCmd("chmod", "555", "/usr/bin/rclone")
+						if err != nil {
+							return err
+						}
+						return nil
+					} else {
+						return fmt.Errorf("File server not accessible")
+					}
+				},
+				func() error {
+					err := util.DownloadFile(fmt.Sprintf("https://github.com/rclone/rclone/releases/download/v1.68.1/rclone-v1.68.1-linux-%s.zip", armOrAmd), "rclone.zip")
+					if err != nil {
+						return fmt.Errorf("Download failed %w", err)
+					}
+					err = util.UnzipFile("rclone.zip", "./")
+					if err != nil {
+						return fmt.Errorf("Unzip failed %w", err)
+					}
+					_, err = util.ModRunCmd.NewBuilder("mv", "rclone-v1.68.1-linux-amd64/rclone", "/usr/bin/").
+						WithRoot().PrintCmd().ShowProgress().BlockRun()
+					if err != nil {
+						return fmt.Errorf("mv failed from %s to %s, %v", "rclone-v1.68.1-linux-amd64/rclone", "/usr/bin/", err)
+					}
+					return nil
+				},
+			}
+			var err error = nil
+			for _, solution := range solutions {
+				err = solution()
 				if err != nil {
-					return fmt.Errorf("Download failed %w", err)
+					fmt.Println(color.RedString("try install rclone failed, err: %v, will try next solution", err))
+				} else {
+					break
 				}
-				err = util.UnzipFile("rclone.zip", "./")
-				if err != nil {
-					return fmt.Errorf("Unzip failed %w", err)
-				}
-				_, err = util.ModRunCmd.NewBuilder("mv", "rclone-v1.68.1-linux-amd64/rclone", "/usr/bin/").
-					WithRoot().PrintCmd().ShowProgress().BlockRun()
-				if err != nil {
-					return fmt.Errorf("mv failed from %s to %s, %v", "rclone-v1.68.1-linux-amd64/rclone", "/usr/bin/", err)
-				}
+			}
+			if err != nil {
+				fmt.Println(color.RedString("install rclone failed, err: %v", err))
+				return err
+			} else {
+				fmt.Println(color.GreenString("install rclone success"))
 				return nil
 			}
+			// _, err := util.ModRunCmd.NewBuilder("telego", "cmd", "--cmd", "deploy-templete/bin_rclone/install/local").ShowProgress().BlockRun()
+
+			// https://github.com/rclone/rclone/releases/download/v1.68.1/rclone-v1.68.1-linux-amd64.zip
 
 		} else if strings.Contains(runtime.GOOS, "windows") {
-			// windows
-			err := util.DownloadFile("https://github.com/rclone/rclone/releases/download/v1.68.1/rclone-v1.68.1-windows-amd64.zip", "rclone.zip")
-			if err != nil {
-				ModJobInstall.InstallLocalByJob(InstallJob{Bin: "rclone", BinPrj: "bin_rclone"})
-				return nil
-				// ModRunCmd.RequireRootRunCmd(
-				// 	pyCmdHead(), "-c",
-				// 	fmt.Sprintf("import urllib.request, os; script = urllib.request.urlopen('http://%s:8003/bin_rclone/install_browser.py').read(); exec(script.decode());", MainNodeIp))
-			} else {
-				util.UnzipFile("rclone.zip", "./")
-				return util.ModRunCmd.CopyDirContentOrFileTo("rclone.exe", "C:\\Windows\\System32\\")
+			solutions := []func() error{
+				func() error {
+					prjBinDir := filepath.Join(ConfigLoad().ProjectDir, "bin_rclone", "teledeploy", "rclone.exe")
+					return util.InstallWindowsPreparedBin(prjBinDir, "rclone.exe")
+				},
+				func() error {
+					err := util.DownloadFile("https://github.com/rclone/rclone/releases/download/v1.68.1/rclone-v1.68.1-windows-amd64.zip", "rclone.zip")
+					if err != nil {
+						ModJobInstall.InstallLocalByJob(InstallJob{Bin: "rclone", BinPrj: "bin_rclone"})
+						return nil
+						// ModRunCmd.RequireRootRunCmd(
+						// 	pyCmdHead(), "-c",
+						// 	fmt.Sprintf("import urllib.request, os; script = urllib.request.urlopen('http://%s:8003/bin_rclone/install_browser.py').read(); exec(script.decode());", MainNodeIp))
+					} else {
+						util.UnzipFile("rclone.zip", "./")
+						return util.ModRunCmd.CopyDirContentOrFileTo("rclone.exe", "C:\\Windows\\System32\\")
+					}
+				},
 			}
+			var err error = nil
+			for _, solution := range solutions {
+				err = solution()
+				if err != nil {
+					fmt.Println(color.RedString("try install rclone failed, err: %v, will try next solution", err))
+				} else {
+					break
+				}
+			}
+			if err != nil {
+				fmt.Println(color.RedString("install rclone failed, err: %v", err))
+				return err
+			} else {
+				fmt.Println(color.GreenString("install rclone success"))
+				return nil
+			}
+			// windows
 		} else {
 			// fmt.Println(color.RedString("unsupported System %s", runtime.GOOS))
 			// os.Exit(1)

@@ -96,8 +96,10 @@ func SaveEntryDir() string {
 	entryDir0, err := filepath.Abs(CurDir())
 	if err != nil {
 		entryDir = homedir.HomeDir()
+		fmt.Println(color.RedString("get entry dir failed %+v, \nwill set entryDir to home dir %s", err, homedir.HomeDir()))
 	} else {
 		entryDir = entryDir0
+		fmt.Println(color.GreenString("get entry dir success %s", entryDir))
 	}
 	return entryDir
 }
@@ -425,4 +427,40 @@ func getNodeString(node *FileNode, depth int, builder *strings.Builder) {
 // PrintTree 打印文件树结构，便于调试
 func (ft *FileTreeStruct) PrintTree() {
 	fmt.Print(ft.GetDebugStr())
+}
+
+func SafeCopyOverwrite(src, dst string) error {
+	dstDir := filepath.Dir(dst)
+	err := os.MkdirAll(dstDir, 0755)
+	if err != nil {
+		return fmt.Errorf("create dst dir failed %s", err)
+	}
+
+	// Open source file
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return fmt.Errorf("failed to open source file %s: %w", src, err)
+	}
+	defer srcFile.Close()
+
+	// Create destination file (will overwrite if exists)
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("failed to create destination file %s: %w", dst, err)
+	}
+	defer dstFile.Close()
+
+	// Copy file contents
+	_, err = srcFile.WriteTo(dstFile)
+	if err != nil {
+		return fmt.Errorf("failed to copy file contents from %s to %s: %w", src, dst, err)
+	}
+
+	// Sync to ensure data is written to disk
+	err = dstFile.Sync()
+	if err != nil {
+		return fmt.Errorf("failed to sync destination file %s: %w", dst, err)
+	}
+
+	return nil
 }

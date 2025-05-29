@@ -3,7 +3,6 @@ package app
 import (
 	"fmt"
 	"os"
-	"path"
 	"path/filepath"
 	"strings"
 	"telego/util"
@@ -237,25 +236,40 @@ func DeploymentPrepareHandleCached(item *DeploymentPrepareItem, prjdir string, d
 						dest := filepath.Join(prjdir, *copyStep.to)
 
 						fmt.Println(color.BlueString("Copying %s to %s", src, dest))
-						newSrc := filepath.Join(path.Dir(src), filepath.Base(dest))
-						newSrcDir := filepath.Dir(newSrc)
-						err := os.MkdirAll(newSrcDir, 0755)
+
+						destDir := filepath.Dir(dest)
+						err := os.MkdirAll(destDir, 0755)
 						if err != nil {
+							fmt.Println(color.RedString("failed to create directory: %w", err))
 							return fmt.Errorf("failed to create directory: %w", err)
 						}
-						err = os.Rename(src, newSrc)
+
+						err = os.Rename(src, dest)
 						if err != nil {
-							filetree, err := util.GetFileTree(10, "extract")
-							filetreeStr := ""
-							if err != nil {
-								filetreeStr = fmt.Sprintf("get filetree failed %v", err)
-							} else {
-								filetreeStr = filetree.GetDebugStr()
-							}
-							return fmt.Errorf("failed to rename %s to %s: %w, filetree in extract: \n%s", src, dest, err, filetreeStr)
+							fmt.Println(color.RedString("failed to rename %s to %s: %w", src, dest, err))
+							return fmt.Errorf("failed to rename %s to %s: %w", src, dest, err)
 						}
 
-						util.ModRunCmd.CopyDirContentOrFileTo(newSrc, path.Dir(dest))
+						fmt.Println(color.BlueString("Copied %s to %s", src, dest))
+						// newSrc := filepath.Join(path.Dir(src), filepath.Base(dest))
+						// newSrcDir := filepath.Dir(newSrc)
+						// err := os.MkdirAll(newSrcDir, 0755)
+						// if err != nil {
+						// 	return fmt.Errorf("failed to create directory: %w", err)
+						// }
+						// err = os.Rename(src, newSrc)
+						// if err != nil {
+						// 	filetree, err := util.GetFileTree(10, "extract")
+						// 	filetreeStr := ""
+						// 	if err != nil {
+						// 		filetreeStr = fmt.Sprintf("get filetree failed %v", err)
+						// 	} else {
+						// 		filetreeStr = filetree.GetDebugStr()
+						// 	}
+						// 	return fmt.Errorf("failed to rename %s to %s: %w, filetree in extract: \n%s", src, dest, err, filetreeStr)
+						// }
+
+						// util.ModRunCmd.CopyDirContentOrFileTo(newSrc, path.Dir(dest))
 					}
 				}
 

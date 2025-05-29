@@ -192,7 +192,9 @@ func (m ModJobStartFileserverStruct) ExecDelegate(sshModeStr string) DispatchExe
 		Exit: true,
 		ExitWithDelegate: func() {
 			util.PrintStep("StartFileserver", color.BlueString("Starting job StartFileserver... cmds[%v]", cmd))
-			_, err := util.ModRunCmd.ShowProgress(cmd[0], cmd[1:]...).BlockRun()
+			// curDir, err := os.Getwd()
+			// fmt.Println("current running dir: %s, err:%+v", curDir, err)
+			_, err := util.ModRunCmd.ShowProgress(cmd[0], cmd[1:]...).SetDir(util.GetEntryDir()).BlockRun()
 			if err != nil {
 				fmt.Println(color.RedString("job StartFileserver error: %v", err))
 				os.Exit(1)

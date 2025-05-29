@@ -408,6 +408,44 @@ CMD ["bash"]
     os_system_sure(f"docker run --name {randname} -v {HOST_PROJECT_DIR}:/telego -w /telego telego_build bash -c \"python3 1.build.py -- privilege\"")
     # remove container
     os_system_sure(f"docker rm -f {randname}")
+
+    def prepare_telego_bin():
+        print("\n>>> preparing bin_telego project")
+        def read_telego_config():
+            # if win or mac, read ~/teledeploy_secret/config.yaml
+            config_path = ""
+            if os.name == "nt" or os.name == "mac":
+                config_path = os.path.expanduser("~/teledeploy_secret/config.yaml")
+            else:
+                config_path = "/telego/teledeploy_secret/config.yaml"
+            with open(config_path, "r") as f:
+                return yaml.safe_load(f)
+        prjdir=read_telego_config()["project_dir"]
+        if not os.path.exists(prjdir):
+            print(f"project directory {prjdir} not setup, can't")
+        else:
+            copymap={
+                "dist/telego_linux_amd64": os.path.join(prjdir,"bin_telego","teledeploy","telego_amd64"),
+                "dist/telego_linux_arm64":os.path.join(prjdir,"bin_telego","teledeploy","telego_arm64"),
+                "dist/telego_windows_amd64.exe":os.path.join(prjdir,"bin_telego","teledeploy","telego.exe"),
+            }
+            for src,dst in copymap.items():
+                dstdir=os.path.dirname(dst)
+                if not os.path.exists(dstdir):
+                    os.makedirs(dstdir)
+                shutil.copy(src,dst)
+
+            # create deployment.yml
+            with open(os.path.join(prjdir,"bin_telego","deployment.yml"),"w") as f:
+                f.write(f"""
+comment: "all in one cluster management"
+# prepare by run 1.build.py
+prepare: []
+bin:
+  telego:
+""")
+    prepare_telego_bin()
+            # else, read /teledeploy_secret/config.yaml
     # end of call the docker
     exit(0)
 

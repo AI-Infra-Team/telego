@@ -39,3 +39,27 @@ func InstallLinuxBin(url, tempDir, binname string) error {
 	ModRunCmd.RequireRootRunCmd("chmod", "755", fmt.Sprintf("/usr/bin/%s", binname))
 	return nil
 }
+
+func InstallLinuxPreparedBin(preparedPath string, targetBinName string) error {
+	PrintStep("InstallLinuxPreparedBin", "installing "+targetBinName+" from "+preparedPath)
+	// safely copy the preparedPath to /usr/bin/{targetBinName}
+	_, err := ModRunCmd.RequireRootRunCmd("cp", preparedPath, fmt.Sprintf("/usr/bin/%s", targetBinName))
+	if err != nil {
+		return fmt.Errorf("InstallLinuxPreparedBin failed, err: %v", err)
+	}
+	_, err = ModRunCmd.RequireRootRunCmd("chmod", "755", fmt.Sprintf("/usr/bin/%s", targetBinName))
+	if err != nil {
+		return fmt.Errorf("InstallLinuxPreparedBin failed, err: %v", err)
+	}
+	return nil
+}
+
+func InstallWindowsPreparedBin(preparedPath string, targetBinName string) error {
+	PrintStep("InstallWindowsPreparedBin", "installing "+targetBinName+" from "+preparedPath)
+	// use go lib to do copy
+	err := SafeCopyOverwrite(preparedPath, fmt.Sprintf("C:\\Windows\\System32\\%s", targetBinName))
+	if err != nil {
+		return fmt.Errorf("InstallWindowsPreparedBin failed, err: %v", err)
+	}
+	return nil
+}
