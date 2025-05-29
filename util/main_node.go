@@ -37,7 +37,7 @@ func ReadStrFromMainNode(remotePath string) (string, error) {
 
 	content, err := ModRunCmd.NewBuilder("rclone", "cat", MainNodeRcloneName+":"+remotePath).BlockRun()
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("read str from main node failed, err: %v, content: %s", err, content)
 	}
 	content = strings.TrimSpace(content)
 	return content, nil

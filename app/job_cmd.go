@@ -67,7 +67,7 @@ func (_ ModJobCmdStruct) CmdLocal(job CmdJob) {
 
 	// avoid nil ptr for conf
 
-	loadedConfig := config.MayFailLoad(util.WorkspaceDir())
+	_, loadedConfig := config.MayFailLoad(util.WorkspaceDir())
 	fmt.Println("loadedConfig:", loadedConfig)
 	rootMenu := InitMenuTree(loadedConfig)
 	cmds := strings.Split(job.CmdPath, "/")

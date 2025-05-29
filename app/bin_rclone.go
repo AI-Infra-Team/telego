@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"telego/app/config"
 	"telego/util"
 
 	"github.com/fatih/color"
@@ -80,9 +81,13 @@ func (k BinManagerRclone) SpecInstallFunc() func() error {
 			defer os.RemoveAll(installDir)
 
 			// check bin_rclone prepared in project_dir
-			prjBinDir := filepath.Join(ConfigLoad().ProjectDir, "bin_rclone", "teledeploy", "rclone_"+armOrAmd)
 			solutions := []func() error{
 				func() error {
+					config, loaded := config.MayFailLoad(util.WorkspaceDir())
+					if !loaded {
+						return fmt.Errorf("load config failed")
+					}
+					prjBinDir := filepath.Join(config.ProjectDir, "bin_rclone", "teledeploy", "rclone_"+armOrAmd)
 					return util.InstallLinuxPreparedBin(prjBinDir, "rclone")
 				},
 				func() error {

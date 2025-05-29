@@ -1010,7 +1010,7 @@ func ImgUploaderUploadHandlerV1(c *gin.Context) {
 	succress, err := (&ImgUploaderUploadHandlerV2{}).checkAndUploadImgs(tempDir)
 	if err != nil {
 		fmt.Println("aaaaa")
-		c.JSON(500, gin.H{"error": fmt.Errorf("checkAndUploadImgs failed: %v", err)})
+		c.JSON(500, gin.H{"error": fmt.Sprintf("checkAndUploadImgs failed: %+v", err)})
 		return
 	}
 
