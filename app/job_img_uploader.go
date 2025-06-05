@@ -281,10 +281,22 @@ func (m *ModJobImgUploaderStruct) uploadImage(imagePath string) {
 		imagePath = filepath.Join(util.GetEntryDir(), imagePath)
 	}
 
+	stat, err := os.Stat(imagePath)
+	if err != nil {
+		fmt.Println(color.RedString("上传失败，%s 不存在", imagePath))
+		os.Exit(1)
+	}
+
+	// if not dir, print error
+	if !stat.IsDir() {
+		fmt.Println(color.RedString("上传失败，%s 不是目录，需要指定包含.tar镜像包的目录", imagePath))
+		os.Exit(1)
+	}
+
 	// scan files under imagePath
 	files, err := filepath.Glob(filepath.Join(imagePath, "*.tar"))
 	if err != nil {
-		fmt.Println(color.RedString("Failed to scan files under %s: %v", imagePath, err))
+		fmt.Println(color.RedString("Failed to scan files end with .tar under %s: %v", imagePath, err))
 		os.Exit(1)
 	}
 

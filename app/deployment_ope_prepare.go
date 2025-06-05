@@ -81,9 +81,19 @@ func DeploymentPreparePyscript(prjdir string, item *DeploymentPrepareItem) error
 
 	// remove old pyscript
 	prepare_script_prefix := "prepare_script_"
-	_, err = util.ModRunCmd.NewBuilder("rm", "-rf", prepare_script_prefix+"*").ShowProgress().SetDir(prjcachedir).BlockRun()
-	if err != nil {
-		return fmt.Errorf("failed to remove %s_*.py: %w", prepare_script_prefix, err)
+	{
+		// Use Go's built-in file operations for cross-platform compatibility
+		pattern := filepath.Join(prjcachedir, prepare_script_prefix+"*")
+		matches, err := filepath.Glob(pattern)
+		if err != nil {
+			return fmt.Errorf("failed to glob pattern %s: %w", pattern, err)
+		}
+		for _, match := range matches {
+			err := os.RemoveAll(match)
+			if err != nil {
+				return fmt.Errorf("failed to remove %s: %w", match, err)
+			}
+		}
 	}
 
 	// create new pyscript

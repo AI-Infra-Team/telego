@@ -1,6 +1,7 @@
 package app
 
 import (
+	"strings"
 	"telego/util"
 	"time"
 )
@@ -12,7 +13,8 @@ func (k BinManagerWinfsp) CheckInstalled() bool {
 		return true
 	}
 
-	cmd, err := util.ModRunCmd.NewBuilder("rclone", "mount", "D:", "K:").AsyncRun()
+	builder := util.ModRunCmd.NewBuilder("rclone", "mount", "D:", "K:")
+	cmd, err := builder.AsyncRun()
 	defer cmd.Process.Kill()
 	if err != nil {
 		return false
@@ -23,6 +25,9 @@ func (k BinManagerWinfsp) CheckInstalled() bool {
 		return false
 	}
 
+	if strings.Contains(string(builder.Output()), "cannot find winfsp") {
+		return false
+	}
 	// 如果命令成功执行，则认为 Winfsp 已安装
 	return true
 }

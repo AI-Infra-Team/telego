@@ -184,7 +184,7 @@ func restartSshService() error {
 		}
 	}
 
-	return fmt.Errorf("failed to restart SSH service: %w, err1: %w, err2: %w, err3: %w, output1: %s, output2: %s, output3: %s", err1, err2, err3, output1, output2, output3)
+	return fmt.Errorf("failed to restart SSH service: err1: %w, err2: %w, err3: %w, output1: %s, output2: %s, output3: %s", err1, err2, err3, output1, output2, output3)
 }
 
 // Job entry point

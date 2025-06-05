@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"telego/util"
 	"telego/util/yamlext"
@@ -95,7 +96,7 @@ func (pipeline *ConfigExporterPipeline) getFinalValue() (string, error) {
 		if i == len(pipeline.YamlMapGet)-1 {
 			switch v := currentValue_.(type) {
 			case int:
-				resultValue = string(v)
+				resultValue = strconv.Itoa(v)
 			case string:
 				resultValue = v
 			default:
