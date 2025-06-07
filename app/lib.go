@@ -247,12 +247,17 @@ func Main() {
 	if util.FileServerAccessible() {
 		checkAndUpgrade()
 		err = NewBinManager(BinManagerRclone{}).MakeSureWith()
+		printErr := func(binname string, err error) {
+			fmt.Println(color.RedString("fileserver is setup, but binded bin %s is not uploaded with error: %v"+
+				"\nplease upload it according to https://qcnoe3hd7k5c.feishu.cn/wiki/QSTxwR63gihAQ8k7INXcMwVynrh", binname, err))
+		}
 		if err != nil {
-			fmt.Println(color.RedString("Rclone install failed, err: v%", err))
+			// fmt.Println(color.RedString("Rclone install failed, err: v%", err))
+			printErr("rclone", err)
 			os.Exit(1)
 		}
 		if err := NewBinManager(BinManagerKubectl{}).MakeSureWith(); err != nil {
-			fmt.Println(err)
+			printErr("kubectl", err)
 			os.Exit(1)
 		}
 	}

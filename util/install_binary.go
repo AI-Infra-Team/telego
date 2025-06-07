@@ -40,10 +40,10 @@ func InstallLinuxBin(url, tempDir, binname string) error {
 	return nil
 }
 
-func InstallLinuxPreparedBin(preparedPath string, targetBinName string) error {
-	PrintStep("InstallLinuxPreparedBin", "installing "+targetBinName+" from "+preparedPath)
+func InstallLinuxPreparedBin(preparedBinFilePath string, targetBinName string) error {
+	PrintStep("InstallLinuxPreparedBin", "installing "+targetBinName+" from "+preparedBinFilePath)
 	// safely copy the preparedPath to /usr/bin/{targetBinName}
-	_, err := ModRunCmd.RequireRootRunCmd("cp", preparedPath, fmt.Sprintf("/usr/bin/%s", targetBinName))
+	_, err := ModRunCmd.RequireRootRunCmd("cp", preparedBinFilePath, fmt.Sprintf("/usr/bin/%s", targetBinName))
 	if err != nil {
 		return fmt.Errorf("InstallLinuxPreparedBin failed, err: %v", err)
 	}
@@ -54,10 +54,10 @@ func InstallLinuxPreparedBin(preparedPath string, targetBinName string) error {
 	return nil
 }
 
-func InstallWindowsPreparedBin(preparedPath string, targetBinName string) error {
-	PrintStep("InstallWindowsPreparedBin", "installing "+targetBinName+" from "+preparedPath)
+func InstallWindowsPreparedBin(preparedBinFilePath string, targetBinName string) error {
+	PrintStep("InstallWindowsPreparedBin", "installing "+targetBinName+" from "+preparedBinFilePath)
 	// use go lib to do copy
-	err := SafeCopyOverwrite(preparedPath, fmt.Sprintf("C:\\Windows\\System32\\%s", targetBinName))
+	err := SafeCopyOverwrite(preparedBinFilePath, fmt.Sprintf("C:\\Windows\\System32\\%s", targetBinName))
 	if err != nil {
 		return fmt.Errorf("InstallWindowsPreparedBin failed, err: %v", err)
 	}

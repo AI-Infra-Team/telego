@@ -417,7 +417,7 @@ CMD ["bash"]
             if os.name == "nt" or os.name == "mac":
                 config_path = os.path.expanduser("~/teledeploy_secret/config.yaml")
             else:
-                config_path = "/telego/teledeploy_secret/config.yaml"
+                config_path = "/teledeploy_secret/config.yaml"
             with open(config_path, "r") as f:
                 return yaml.safe_load(f)
         prjdir=read_telego_config()["project_dir"]
