@@ -98,8 +98,9 @@ func (_ ModJobApplyStruct) applyLocal(job ApplyJob) {
 			config = split[1]
 		}
 		helmNs := job.HelmNamespaces[i]
-		helm := filepath.Base(helmDir)
-		helmCmds := []string{"helm", "install", helm, helmDir, "--kube-context", job.ClusterContext}
+		// helm := filepath.Base(helmDir)
+		standardProjectName := strings.ReplaceAll(job.Project, "_", "-")
+		helmCmds := []string{"helm", "install", standardProjectName, helmDir, "--kube-context", job.ClusterContext}
 		if helmNs != "" {
 			helmCmds = append(helmCmds, "--namespace", helmNs)
 		}
