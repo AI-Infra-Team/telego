@@ -12,3 +12,15 @@ build_context.yml
 Dockerfile.test
 compile_conf.yml.bak
 rclone
+__pycache__
+
+# pnpm相关文件
+pnpm-lock.yaml
+.pnpm-store/
+.pnpm/
+
+# 保留npm相关忽略 (兼容性)
+node_modules/
+package-lock.json
+npm-debug.log
+yarn.lock

@@ -1,0 +1,61 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Element Plus 样式优化 */
+:root {
+    --el-color-primary: #3b82f6;
+    --el-color-success: #10b981;
+    --el-color-warning: #f59e0b;
+    --el-color-danger: #ef4444;
+    --el-color-info: #6b7280;
+}
+
+@layer base {
+    html {
+        font-family: 'Inter', system-ui, sans-serif;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+    }
+}
+
+@layer components {
+    .btn {
+        @apply px-4 py-2 rounded-lg font-medium transition-colors;
+    }
+
+    .btn-primary {
+        @apply bg-primary-600 text-white hover:bg-primary-700;
+    }
+
+    .btn-secondary {
+        @apply bg-gray-200 text-gray-900 hover:bg-gray-300;
+    }
+
+    .card {
+        @apply bg-white rounded-lg shadow-sm border border-gray-200;
+    }
+
+    /* 保留一些自定义样式类，以防需要 */
+    .custom-card {
+        @apply bg-white rounded-lg shadow-sm border border-gray-200 p-4;
+    }
+
+    /* Element Plus 样式覆盖 */
+    .el-menu {
+        border-right: none !important;
+    }
+
+    .el-menu-item {
+        border-radius: 6px !important;
+        margin: 2px 0 !important;
+    }
+
+    .el-menu-item.is-active {
+        background-color: var(--el-color-primary-light-9) !important;
+        color: var(--el-color-primary) !important;
+    }
+}

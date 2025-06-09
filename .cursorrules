@@ -1,0 +1,93 @@
+# Telego 项目 Cursor AI 助手规则
+
+## 项目概述
+这是一个Go语言开发的Kubernetes部署管理工具，包含Vue3+TypeScript前端UI。
+
+## 代码风格和约定
+
+### Go 代码
+- 错误处理必须显式检查，不能忽略错误
+- 使用`fmt.Sprintf`而不是字符串拼接
+- 日志使用`util.Logger`统一接口，非tui上下文建议同时print信息
+- 关键步骤使用util.PrintStep
+- 使用`color`包为终端输出添加颜色
+- Go Job模式
+  ```go
+  type ModJobXxxStruct struct{}
+  var ModJobXxx ModJobXxxStruct
+
+  func (m ModJobXxxStruct) JobCmdName() string {
+      return "job-name"
+  }
+
+  func (_ ModJobXxxStruct) ParseJob(cmd *cobra.Command) *cobra.Command {
+      // 实现job逻辑
+  }
+  ```
+
+### TypeScript/Vue 代码
+- 使用TypeScript严格模式
+- 遵循Vue 3 Composition API约定
+- 使用`<script setup lang="ts">`语法
+- 组件名使用PascalCase
+- 文件名使用kebab-case
+- 使用Tailwind CSS类名
+- API调用统一使用axios和类型安全
+
+### 文件组织
+- Go代码在`app/`目录，按功能模块分文件
+- Vue前端代码在`ui/src/`目录
+- 工具函数在`util/`目录
+- 每个job模块实现`JobModInterface`接口
+
+
+
+### Vue组件模式
+```vue
+<template>
+  <!-- UI模板 -->
+</template>
+
+<script setup lang="ts">
+import { ref, computed, onMounted } from 'vue'
+// 组件逻辑
+</script>
+
+<style scoped>
+/* 组件样式 */
+</style>
+```
+
+
+>>> pyscript_util 辅助库功能
+
+pyscript_util - Python脚本实用工具库，提供以下功能：
+
+- add_usage_to_cursorrule(): Add pyscript_util available functions to cursor rule file
+  详细信息可通过 help(pyscript_util.add_usage_to_cursorrule) 查看
+- chdir_to_cur_file(): Change the current working directory to the directory containing the calling script
+- find_file_upwards(): Search for a file by walking up the directory tree from current working directory
+  详细信息可通过 help(pyscript_util.find_file_upwards) 查看
+- get_available_functions(): Dynamically get all available public functions in this module
+- install_nodejs_via_nvm(): Install Node.js via NVM (Node Version Manager)
+- install_nodejs_via_package_manager(): Install Node.js via system package managers (fallback method)
+- print_available_functions(): Print all available functions with their descriptions
+- run_cmd(): Execute a command using os.system and print the command before running it
+  详细信息可通过 help(pyscript_util.run_cmd) 查看
+- run_cmd_sure(): Execute a command and ensure it succeeds (exit on failure)
+  详细信息可通过 help(pyscript_util.run_cmd_sure) 查看
+- run_root_cmd(): Execute a command with sudo privileges using os.system
+  详细信息可通过 help(pyscript_util.run_root_cmd) 查看
+- run_root_cmd_sure(): Execute a command with sudo privileges and ensure it succeeds (exit on failure)
+  详细信息可通过 help(pyscript_util.run_root_cmd_sure) 查看
+- setup_npm(): Setup Node.js 18 and pnpm package manager
+- setup_script_environment(): Alias for chdir_to_cur_file() - setup script environment
+
+基本导入方式:
+```python
+from pyscript_util import *
+# 或
+import pyscript_util
+```
+
+<<< pyscript_util 辅助库功能
