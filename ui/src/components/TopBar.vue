@@ -25,7 +25,7 @@
         </div>
 
         <!-- 右侧操作区 -->
-        <div class="flex items-center space-x-2">
+        <div class="flex items-center space-x-4">
           <!-- 刷新按钮 -->
           <el-button
             @click="refreshPage"
@@ -36,39 +36,26 @@
             <el-icon><Refresh /></el-icon>
           </el-button>
 
-          <!-- 通知按钮 -->
-          <el-badge :value="3" type="danger">
-            <el-button link title="通知">
-              <el-icon><Bell /></el-icon>
-            </el-button>
-          </el-badge>
-
-          <!-- 全屏切换 -->
-          <el-button
-            @click="toggleFullscreen"
-            link
-            title="全屏切换"
-          >
-            <el-icon>
-              <FullScreen v-if="!isFullscreen" />
-              <Close v-else />
-            </el-icon>
-          </el-button>
-
-          <!-- 用户菜单 -->
-          <el-dropdown trigger="click">
-            <el-button link class="flex items-center space-x-2">
-              <el-avatar size="small" style="background-color: #3b82f6;">A</el-avatar>
-              <el-icon><ArrowDown /></el-icon>
-            </el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item>个人资料</el-dropdown-item>
-                <el-dropdown-item>账户设置</el-dropdown-item>
-                <el-dropdown-item divided>退出登录</el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
+          <!-- 用户信息和菜单 -->
+          <div class="flex items-center space-x-3">
+            <span class="text-sm text-gray-600">欢迎，{{ username }}</span>
+            <el-dropdown trigger="click">
+              <el-button link class="flex items-center space-x-2">
+                <el-avatar size="small" :style="{ backgroundColor: '#3b82f6' }">
+                  {{ userInitial }}
+                </el-avatar>
+                <el-icon><ArrowDown /></el-icon>
+              </el-button>
+              <template #dropdown>
+                <el-dropdown-menu>
+                  <el-dropdown-item @click="logout">
+                    <el-icon class="mr-2"><SwitchButton /></el-icon>
+                    退出登录
+                  </el-dropdown-item>
+                </el-dropdown-menu>
+              </template>
+            </el-dropdown>
+          </div>
         </div>
       </div>
     </div>
@@ -77,14 +64,12 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import {
   Menu,
   Refresh,
-  Bell,
-  FullScreen,
-  Close,
-  ArrowDown
+  ArrowDown,
+  SwitchButton
 } from '@element-plus/icons-vue'
 
 // Props
@@ -103,18 +88,23 @@ const emit = defineEmits<{
 
 // State
 const route = useRoute()
+const router = useRouter()
 const isRefreshing = ref(false)
-const isFullscreen = ref(false)
+
+// 获取用户名
+const username = computed(() => {
+  return localStorage.getItem('user') || 'Unknown'
+})
+
+// 获取用户名首字母
+const userInitial = computed(() => {
+  const name = username.value
+  return name ? name.charAt(0).toUpperCase() : 'U'
+})
 
 // 面包屑导航配置
 const breadcrumbConfig: Record<string, { label: string; parent?: string }> = {
   '/': { label: '初始化' },
-  '/dashboard': { label: '概览' },
-  '/deployments': { label: '部署管理' },
-  '/monitoring': { label: '监控' },
-  '/logs': { label: '日志' },
-  '/security': { label: '安全' },
-  '/settings': { label: '设置' },
 }
 
 // 计算面包屑
@@ -155,14 +145,11 @@ const refreshPage = async () => {
   }
 }
 
-const toggleFullscreen = () => {
-  if (!document.fullscreenElement) {
-    document.documentElement.requestFullscreen()
-    isFullscreen.value = true
-  } else {
-    document.exitFullscreen()
-    isFullscreen.value = false
-  }
+// 退出登录
+const logout = () => {
+  localStorage.removeItem('auth_token')
+  localStorage.removeItem('user')
+  router.push('/login')
 }
 </script>
 

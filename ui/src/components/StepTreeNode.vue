@@ -43,7 +43,7 @@
               ]">
                 {{ step.name }}
               </h3>
-              <p class="text-gray-600 text-sm">{{ step.description }}</p>
+              <p class="text-gray-600 text-sm" v-html="formattedDescription"></p>
             </div>
           </div>
 
@@ -137,6 +137,11 @@ const isChildStep = computed(() => {
   return props.depth > 0
 })
 
+// 格式化后的描述文本
+const formattedDescription = computed(() => {
+  return formatDescription(props.step.description)
+})
+
 // 切换展开状态
 function toggleExpanded() {
   expanded.value = !expanded.value
@@ -157,6 +162,22 @@ function getStepProgressStatus(stepStatus: string) {
     case 'error': return 'exception'
     default: return undefined
   }
+}
+
+// 格式化描述文本，将URL转换为超链接
+function formatDescription(description: string): string {
+  if (!description) return ''
+  
+  // 匹配http://或https://开头的URL
+  const urlRegex = /(https?:\/\/[^\s<>]+)/gi
+  
+  return description.replace(urlRegex, (url) => {
+    // 移除末尾的标点符号
+    const cleanUrl = url.replace(/[.,;!?]+$/, '')
+    const punctuation = url.slice(cleanUrl.length)
+    
+    return `<a href="${cleanUrl}" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${cleanUrl}</a>${punctuation}`
+  })
 }
 </script>
 
@@ -185,5 +206,20 @@ function getStepProgressStatus(stepStatus: string) {
 @keyframes rotating {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
+}
+
+/* 超链接样式 */
+:deep(a) {
+  color: #2563eb;
+  text-decoration: underline;
+  transition: color 0.2s ease;
+}
+
+:deep(a:hover) {
+  color: #1d4ed8;
+}
+
+:deep(a:visited) {
+  color: #7c3aed;
 }
 </style> 

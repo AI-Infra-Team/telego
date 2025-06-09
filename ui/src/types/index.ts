@@ -23,4 +23,19 @@ export interface ApiResponse<T> {
   data?: T
   message?: string
   error?: string
+}
+
+// 登录相关类型定义
+export interface LoginRequest {
+  username: string
+  password: string
+}
+
+export interface LoginResponse {
+  token: string
+  user: string
+}
+
+export interface User {
+  user: string
 } 

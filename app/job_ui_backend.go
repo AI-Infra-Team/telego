@@ -147,19 +147,6 @@ func (_ ModJobUiBackendStruct) retryStep(c *gin.Context) {
 }
 
 func (_ ModJobUiBackendStruct) checkInitializationStatus() InitializationStatus {
-	// 网络检查
-	networkStep := func() InitializationStep {
-		status, errorMsg := processCheckResult(ModJobUiBackend.checkNetworkStatus)
-		return InitializationStep{
-			ID:          "check_network",
-			Name:        "网络连接检查",
-			Description: "检查网络连接是否正常",
-			Status:      status,
-			Error:       errorMsg,
-			Progress:    ModJobUiBackend.getStepProgress("check_network"),
-		}
-	}()
-
 	// 主节点检查
 	mainNodeStep := InitializationStep{
 		ID:          "main_node",
@@ -319,23 +306,12 @@ func (_ ModJobUiBackendStruct) checkInitializationStatus() InitializationStatus 
 		},
 	}
 
-	// 菜单初始化
-	initMenuStep := InitializationStep{
-		ID:          "init_menu",
-		Name:        "菜单初始化",
-		Description: "初始化项目菜单结构",
-		Status:      ModJobUiBackend.checkMenuStatus(),
-		Progress:    ModJobUiBackend.getStepProgress("init_menu"),
-	}
-
 	// 组织所有根步骤
 	steps := []InitializationStep{
-		networkStep,
 		mainNodeStep,
 		k8sClusterStep,
 		imageServiceStep,
 		localToolsStep,
-		initMenuStep,
 	}
 
 	// 计算整体状态和进度
@@ -398,13 +374,6 @@ func (_ ModJobUiBackendStruct) checkInitializationStatus() InitializationStatus 
 	}
 }
 
-func (_ ModJobUiBackendStruct) checkNetworkStatus() string {
-	if util.HasNetwork() {
-		return "completed"
-	}
-	return "网络连接不可用，请检查网络设置或防火墙配置"
-}
-
 func (_ ModJobUiBackendStruct) checkRcloneStatus() string {
 	manager := BinManagerRclone{}
 	if manager.CheckInstalled() {
@@ -441,21 +410,11 @@ func (_ ModJobUiBackendStruct) checkWorkspaceStatus() string {
 	return "error"
 }
 
-func (_ ModJobUiBackendStruct) checkMenuStatus() string {
-	// 检查菜单是否已经初始化
-	if MenuTreeData != "" {
-		return "completed"
-	}
-	return "error"
-}
-
 func (_ ModJobUiBackendStruct) getStepProgress(stepId string) int {
 	// 这里可以实现更精细的进度追踪
 	// 目前简单返回基于状态的进度
 	result := ""
 	switch stepId {
-	case "check_network":
-		result = ModJobUiBackend.checkNetworkStatus()
 	case "check_fileserver":
 		result = ModJobUiBackend.checkFileserverStatus()
 	case "check_rclone":
@@ -478,8 +437,6 @@ func (_ ModJobUiBackendStruct) getStepProgress(stepId string) int {
 		result = ModJobUiBackend.checkSshConfigStatus()
 	case "check_workspace":
 		result = ModJobUiBackend.checkWorkspaceStatus()
-	case "init_menu":
-		result = ModJobUiBackend.checkMenuStatus()
 	}
 
 	if result == "completed" {
@@ -496,7 +453,6 @@ func (_ ModJobUiBackendStruct) runInitializationProcess() {
 	fmt.Println(color.BlueString("Starting initialization process..."))
 
 	steps := []string{
-		"check_network",
 		"check_fileserver",
 		"check_rclone",
 		"check_kubectl",
@@ -507,7 +463,6 @@ func (_ ModJobUiBackendStruct) runInitializationProcess() {
 		"check_image_upload_service",
 		"check_ssh_config",
 		"check_workspace",
-		"init_menu",
 	}
 
 	for _, stepId := range steps {
@@ -572,9 +527,6 @@ func (_ ModJobUiBackendStruct) executeInitializationStep(stepId string) {
 	case "check_workspace":
 		// 初始化工作空间
 		util.InitOwnedDir()
-	case "init_menu":
-		// 初始化菜单
-		fmt.Println("Initializing menu structure...")
 	}
 }
 
@@ -672,8 +624,6 @@ func (_ ModJobUiBackendStruct) getGroupStatus(stepIds []string) string {
 	for _, stepId := range stepIds {
 		result := ""
 		switch stepId {
-		case "check_network":
-			result = ModJobUiBackend.checkNetworkStatus()
 		case "check_fileserver":
 			result = ModJobUiBackend.checkFileserverStatus()
 		case "check_fileserver_tools":
@@ -696,8 +646,6 @@ func (_ ModJobUiBackendStruct) getGroupStatus(stepIds []string) string {
 			result = ModJobUiBackend.checkSshConfigStatus()
 		case "check_workspace":
 			result = ModJobUiBackend.checkWorkspaceStatus()
-		case "init_menu":
-			result = ModJobUiBackend.checkMenuStatus()
 		// 对于组合步骤，递归检查
 		case "k8s_main_cluster":
 			result = ModJobUiBackend.getGroupStatus([]string{"check_k8s_cluster"})

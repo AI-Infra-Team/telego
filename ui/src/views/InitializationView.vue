@@ -38,16 +38,6 @@
         >
           刷新状态
         </el-button>
-        
-        <el-button 
-          @click="startInitialization"
-          :loading="loading"
-          :disabled="status?.overallStatus === 'running'"
-          type="primary"
-          :icon="VideoPlay"
-        >
-          开始初始化
-        </el-button>
       </div>
 
       <!-- 步骤列表 - 树形结构 -->
@@ -89,8 +79,7 @@ import {
   Warning,
   Clock,
   Loading,
-  Refresh,
-  VideoPlay
+  Refresh
 } from '@element-plus/icons-vue'
 import { initializationApi } from '@/api'
 import type { InitializationStatus } from '@/types'
@@ -140,28 +129,6 @@ async function refreshStatus() {
     }
   } catch (error) {
     console.error('Failed to fetch status:', error)
-  } finally {
-    loading.value = false
-  }
-}
-
-async function startInitialization() {
-  loading.value = true
-  try {
-    const response = await initializationApi.startInitialization()
-    if (response.success) {
-      // 开始初始化后，立即刷新状态
-      await refreshStatus()
-      // 定时刷新状态直到完成
-      const interval = setInterval(async () => {
-        await refreshStatus()
-        if (status.value?.overallStatus === 'completed' || status.value?.overallStatus === 'error') {
-          clearInterval(interval)
-        }
-      }, 2000)
-    }
-  } catch (error) {
-    console.error('Failed to start initialization:', error)
   } finally {
     loading.value = false
   }

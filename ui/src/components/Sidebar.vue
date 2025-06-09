@@ -34,22 +34,6 @@
         </el-menu-item>
       </el-menu>
     </div>
-
-    <!-- 底部信息 -->
-    <div class="px-4 py-4 border-t border-gray-200">
-      <div class="flex items-center">
-        <el-avatar size="small" style="background-color: #d1d5db;">
-          <el-icon><User /></el-icon>
-        </el-avatar>
-        <div class="ml-3 flex-1">
-          <p class="text-sm font-medium text-gray-900">管理员</p>
-          <p class="text-xs text-gray-500">admin@telego.local</p>
-        </div>
-        <el-button link size="small">
-          <el-icon><Setting /></el-icon>
-        </el-button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -57,14 +41,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import {
-  House as HomeIcon,
   VideoPlay as PlayIcon,
-  Setting,
-  TrendCharts as ChartBarIcon,
-  Document as DocumentTextIcon,
-  User,
-  Monitor as ServerIcon,
-  Lock as ShieldCheckIcon
 } from '@element-plus/icons-vue'
 
 interface MenuItem {
@@ -79,47 +56,10 @@ const route = useRoute()
 
 const menuItems: MenuItem[] = [
   {
-    name: 'dashboard',
-    label: '概览',
-    path: '/dashboard',
-    icon: HomeIcon,
-  },
-  {
     name: 'initialization',
     label: '初始化',
     path: '/',
     icon: PlayIcon,
-  },
-  {
-    name: 'deployments',
-    label: '部署管理',
-    path: '/deployments',
-    icon: ServerIcon,
-  },
-  {
-    name: 'monitoring',
-    label: '监控',
-    path: '/monitoring',
-    icon: ChartBarIcon,
-  },
-  {
-    name: 'logs',
-    label: '日志',
-    path: '/logs',
-    icon: DocumentTextIcon,
-  },
-  {
-    name: 'security',
-    label: '安全',
-    path: '/security',
-    icon: ShieldCheckIcon,
-    badge: '新'
-  },
-  {
-    name: 'settings',
-    label: '设置',
-    path: '/settings',
-    icon: Setting,
   },
 ]
 
